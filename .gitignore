@@ -1,4 +1,6 @@
 Eigen/
+build/
+*.egg-info/
 # Prerequisites
 *.d
 
