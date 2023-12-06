@@ -1,4 +1,5 @@
 Eigen/
+__pycache__/
 build/
 *.egg-info/
 # Prerequisites

@@ -266,7 +266,7 @@ public:
  * RH Sep. 2021. Includes Plasticity rule for the local inihibitory feedback
  *
  */
-class DMFSimulator {
+class DYN_FIC_DMFSimulator {
 
 public:
     double dt;
@@ -308,9 +308,10 @@ public:
      * @param N_in number of nodes/ROIs in the model
      * @param return_rate_in boolean, whether to return firing rates
      * @param return_bold_in boolean, whether to return BOLD activity     
+     * @param return_fic_in boolean, whether to return FIC values
      */
-    DMFSimulator(ParamStruct params, size_t nb_steps_in, size_t N_in,
-                 bool return_rate_in, bool return_bold_in) :
+    DYN_FIC_DMFSimulator(ParamStruct params, size_t nb_steps_in, size_t N_in,
+                 bool return_rate_in, bool return_bold_in, bool return_fic_in) :
             dt(params["dt"][0]),
             I0(params["I0"][0]),
             w(params["w"][0]),
@@ -338,6 +339,7 @@ public:
             steps_per_millisec(1.0/params["dt"][0]),
             return_rate(return_rate_in),
             return_bold(return_bold_in),
+            return_fic(return_fic_in),
             sn(N_in),
             sg(N_in),
             bold_int(params, nb_steps, N_in) {

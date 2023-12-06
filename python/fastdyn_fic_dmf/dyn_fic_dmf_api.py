@@ -5,7 +5,7 @@ Run simulation of the Dynamic Mean Field model of brain dynamics.
 
 Pedro Mediano, Jun 2020
 """
-import _DMF
+import _DYN_FIC_DMF
 import numpy as np
 
 __all__ = ['default_params', 'run']
@@ -55,7 +55,7 @@ def default_params(**kwargs):
     """
 
     if 'C' not in kwargs:
-        C = np.loadtxt(__file__.rstrip('dmf_api.py') + 'DTI_fiber_consensus_HCP.csv', delimiter=',')
+        C = np.loadtxt(__file__.rstrip('dyn_fic_dmf_api.py') + 'DTI_fiber_consensus_HCP.csv', delimiter=',')
         C = C/C.max()
     else:
         C = []
@@ -75,16 +75,18 @@ def default_params(**kwargs):
     params['Jexte']     = 1.       # external->E coupling
     params['Jexti']     = 0.7      # external->I coupling
     params['w']         = 1.4      # local excitatory recurrence
-    params['de']        = 0.16     # excitatory non linear shape parameter
+    params['g_e']        = 0.16     # excitatory non linear shape parameter
     params['Ie']        = 125/310  # excitatory threshold for nonlinearity
-    params['g_e']       = 310.     # excitatory conductance
-    params['di']        = 0.087    # inhibitory non linear shape parameter
+    params['ce']       = 310.     # excitatory conductance
+    params['g_i']        = 0.087    # inhibitory non linear shape parameter
     params['Ii']        = 177/615  # inhibitory threshold for nonlinearity
-    params['g_i']       = 615.     # inhibitory conductance
+    params['ci']       = 615.     # inhibitory conductance
     params['wgaine']    = 0        # neuromodulatory gain
     params['wgaini']    = 0        # neuromodulatory gain
     params['G']         = 2        # Global Coupling Parameter
-
+    params['lrj']       = 0.05
+    params['taoj']       = 50000
+    params['obj_rate']       = 3.44
     # Balloon-Windkessel parameters (from firing rates to BOLD signal)
     params['TR']  = 2     # number of seconds to sample bold signal
     params['dtt'] = 0.001 # BW integration step, in seconds
@@ -130,11 +132,13 @@ def run(params, nb_steps, desired_out='bold'):
     """
 
     if desired_out == 'bold':
-        return_rate, return_bold = False, True
+        return_rate, return_bold, return_fic = False, True,False
     elif desired_out == 'rate':
-        return_rate, return_bold = True, False
+        return_rate, return_bold, return_fic = True, False,False
     elif desired_out == 'both':
-        return_rate, return_bold = True, True
+        return_rate, return_bold, return_fic = True, True,False
+    elif desired_out == 'all':
+        return_rate, return_bold, return_fic = True, True,True
     else:
         raise ValueError("desired_out must be one of 'bold', 'rate', or 'both'.")
 
@@ -145,23 +149,23 @@ def run(params, nb_steps, desired_out='bold'):
         nb_steps_rate = nb_steps
     else:
         nb_steps_rate = 2*params['batch_size']
-
-    rate_res = np.zeros((N, nb_steps_rate), dtype=float, order='F')
+    if return_fic:
+        nb_steps_fic = nb_steps
+    else:
+        nb_steps_fic = 2*params['batch_size']
+    print(f"return rate is {return_rate} ")
+    print(f"return fic is {return_fic} ")
+    print(f"return bold is {return_bold} ")
+    rate_e_res = np.zeros((N, nb_steps_rate), dtype=float, order='F')
+    rate_i_res = np.zeros((N, nb_steps_rate), dtype=float, order='F')
     bold_res = np.zeros((N, nb_steps_bold), dtype=float, order='F')
+    fic_res = np.zeros((N, nb_steps_fic), dtype=float, order='F')
 
 
     # Run simulation
-    sim = _DMF.DMF(_format_dict(params), nb_steps, N, return_rate, return_bold)
-    sim.run(rate_res, bold_res)
+    sim = _DYN_FIC_DMF.DYN_FIC_DMF(_format_dict(params), nb_steps, N, return_rate, return_bold, return_fic)
+    sim.run(rate_e_res, rate_i_res,bold_res, fic_res)
 
 
-    # Return results
-    if desired_out == 'bold':
-        out = bold_res
-    elif desired_out == 'rate':
-        out = rate_res
-    elif desired_out == 'both':
-        out = (rate_res, bold_res)
-
-    return out
+    return rate_e_res, rate_i_res, bold_res, fic_res
 
