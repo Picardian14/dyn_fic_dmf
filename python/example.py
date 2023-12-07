@@ -5,7 +5,7 @@ Pedro Mediano, June 2020
 """
 import fastdyn_fic_dmf as dmf
 import numpy as np
-from scipy.signal import butter, lfilter
+#from scipy.signal import butter, lfilter
 import matplotlib.pyplot as plt
 # Fetch default parameters
 params = dmf.default_params()

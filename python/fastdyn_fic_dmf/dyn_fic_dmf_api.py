@@ -105,7 +105,7 @@ def default_params(**kwargs):
     return params
 
 
-def run(params, nb_steps, desired_out='bold'):
+def run(params, nb_steps, return_rate=False, return_bold=True,return_fic=False):
     """
     Run the DMF model and return simulated brain activity. Size and number of
     output arguments depends on desired_out.
@@ -119,28 +119,14 @@ def run(params, nb_steps, desired_out='bold'):
         Number of integration steps to compute. Final size of the simulated
         time series depends on selected dt and TR.
 
-    desired_out : {'rate', 'bold' 'both'}, optional
-        Type of output to return from the simulation: either firing rate only,
-        BOLD only, or both. If'both', output is a (r,b) tuple with two numpy
-        arrays. If 'bold', memory consumption is substantially reduced.
+    return_x : bool
+        Current three output options. If false, the returned array will only contain a batch of values and not the entire time series
 
     Returns
     -------
-    out : tuple or np.ndarray
-        Simulated activity of the DMF model. Can be either firing rates, BOLD
-        activity, or a tuple with both (see desired_out above).
+    out : list
+        Simulated activity of the DMF model. Returns excitatory rates, inhibitory rates, bold activity and average FIC time series
     """
-
-    if desired_out == 'bold':
-        return_rate, return_bold, return_fic = False, True,False
-    elif desired_out == 'rate':
-        return_rate, return_bold, return_fic = True, False,False
-    elif desired_out == 'both':
-        return_rate, return_bold, return_fic = True, True,False
-    elif desired_out == 'all':
-        return_rate, return_bold, return_fic = True, True,True
-    else:
-        raise ValueError("desired_out must be one of 'bold', 'rate', or 'both'.")
 
     # Pre-allocate memory for results
     N = params['C'].shape[0]
@@ -164,8 +150,8 @@ def run(params, nb_steps, desired_out='bold'):
 
     # Run simulation
     sim = _DYN_FIC_DMF.DYN_FIC_DMF(_format_dict(params), nb_steps, N, return_rate, return_bold, return_fic)
+    print("Calling run")
     sim.run(rate_e_res, rate_i_res,bold_res, fic_res)
 
 
     return rate_e_res, rate_i_res, bold_res, fic_res
-
