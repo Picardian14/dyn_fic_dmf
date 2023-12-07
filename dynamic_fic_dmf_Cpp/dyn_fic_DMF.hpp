@@ -394,7 +394,7 @@ public:
         sg.fill(0.001);
         Eigen::ArrayXd rnd = Eigen::ArrayXd::Zero(N);
         Eigen::ArrayXd jt = J; //initializing fic
-
+        
         for (size_t t = 0; t < nb_steps; t++) {
 
             size_t rate_idx = t % rate_size;
@@ -436,7 +436,7 @@ public:
             bold_timer += std::chrono::duration <double, std::milli> (diff).count();
 
         }
-
+        std::cout << "Ending simulation";
         if (return_bold) {
             bold_int.join();
 
