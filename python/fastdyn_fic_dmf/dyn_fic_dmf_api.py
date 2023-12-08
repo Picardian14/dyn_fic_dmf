@@ -139,9 +139,7 @@ def run(params, nb_steps, return_rate=False, return_bold=True,return_fic=False):
         nb_steps_fic = nb_steps
     else:
         nb_steps_fic = 2*params['batch_size']
-    print(f"return rate is {return_rate} ")
-    print(f"return fic is {return_fic} ")
-    print(f"return bold is {return_bold} ")
+    
     rate_e_res = np.zeros((N, nb_steps_rate), dtype=float, order='F')
     rate_i_res = np.zeros((N, nb_steps_rate), dtype=float, order='F')
     bold_res = np.zeros((N, nb_steps_bold), dtype=float, order='F')

@@ -414,8 +414,8 @@ public:
                 sg += dt*(-sg/taog+rg.col(rate_idx)/1000) + rnd;
                 sg = sg.unaryExpr(&clip);
                 
-                jt += dt*(-jt/taoj + lrj*(rg.col(rate_idx)*(rn.col(rate_idx)-obj_rate))/1000000); // plasticity and decay               
-                //jt += dt*(lrj*rg/1000*(rn.col(rate_idx)-obj_rate)); // only plasticity                
+                //jt += dt*(-jt/taoj + lrj*(rg.col(rate_idx)*(rn.col(rate_idx)-obj_rate))/1000000); // plasticity and decay               
+                jt += dt*(lrj*(rg.col(rate_idx)*(rn.col(rate_idx)-obj_rate))/1000000); // plasticity                 
                 fic.col(fic_idx) = jt; // saving
             }
 
