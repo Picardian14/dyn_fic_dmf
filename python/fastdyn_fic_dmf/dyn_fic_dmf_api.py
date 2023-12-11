@@ -105,7 +105,7 @@ def default_params(**kwargs):
     return params
 
 
-def run(params, nb_steps, return_rate=False, return_bold=True,return_fic=False):
+def run(params, nb_steps, return_rate=False, return_bold=True,return_fic=False, with_decay=True, with_plasticity=True):
     """
     Run the DMF model and return simulated brain activity. Size and number of
     output arguments depends on desired_out.
@@ -147,7 +147,7 @@ def run(params, nb_steps, return_rate=False, return_bold=True,return_fic=False):
 
 
     # Run simulation
-    sim = _DYN_FIC_DMF.DYN_FIC_DMF(_format_dict(params), nb_steps, N, return_rate, return_bold, return_fic)
+    sim = _DYN_FIC_DMF.DYN_FIC_DMF(_format_dict(params), nb_steps, N, return_rate, return_bold, return_fic, with_decay,with_plasticity)
     print("Calling run")
     sim.run(rate_e_res, rate_i_res,bold_res, fic_res)
 

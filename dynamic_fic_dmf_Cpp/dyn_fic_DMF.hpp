@@ -294,7 +294,7 @@ public:
     
 
     size_t nb_steps, N, batch_size, steps_per_millisec, seed;
-    bool return_rate, return_bold, return_fic;
+    bool return_rate, return_bold, return_fic, with_decay, with_plasticity;
 
     Eigen::ArrayXd sn, sg, J, receptors, Jexte, Jexti;
 
@@ -309,9 +309,11 @@ public:
      * @param return_rate_in boolean, whether to return firing rates
      * @param return_bold_in boolean, whether to return BOLD activity     
      * @param return_fic_in boolean, whether to return FIC values
+     * @param with_decay_in boolean, whether to use decay when calculating FIC
+     * @param with_plasticity_in boolean, whether to use decay when calculating FIC
      */
     DYN_FIC_DMFSimulator(ParamStruct params, size_t nb_steps_in, size_t N_in,
-                 bool return_rate_in, bool return_bold_in, bool return_fic_in) :
+                 bool return_rate_in, bool return_bold_in, bool return_fic_in, bool with_decay_in,bool with_plasticity_in) :
             dt(params["dt"][0]),
             I0(params["I0"][0]),
             w(params["w"][0]),
@@ -340,6 +342,8 @@ public:
             return_rate(return_rate_in),
             return_bold(return_bold_in),
             return_fic(return_fic_in),
+            with_decay(with_decay_in),
+            with_plasticity(with_plasticity_in),
             sn(N_in),
             sg(N_in),
             bold_int(params, nb_steps, N_in) {
@@ -400,7 +404,7 @@ public:
             size_t rate_idx = t % rate_size;
             size_t fic_idx = t % fic_size;
             for (size_t dummy = 0; dummy < steps_per_millisec; dummy++) {                
-                Eigen::ArrayXd xn = I0*Jexte + w*JN*sn + G*JN*(C*sn.matrix()).array() - jt*sg;
+                Eigen::ArrayXd xn = with_plasticity ? I0*Jexte + w*JN*sn + G*JN*(C*sn.matrix()).array() - jt*sg : I0*Jexte + w*JN*sn + G*JN*(C*sn.matrix()).array() - J*sg;;
                 Eigen::ArrayXd xg = I0*Jexti + JN*sn - sg;
 
                 rn.col(rate_idx) = curr2rate(xn, wgaine, g_e, Ie, ce);
@@ -413,9 +417,12 @@ public:
                 rnd = rnd.unaryExpr([&n, &e](double dummy){return n(e);});
                 sg += dt*(-sg/taog+rg.col(rate_idx)/1000) + rnd;
                 sg = sg.unaryExpr(&clip);
-                
-                //jt += dt*(-jt/taoj + lrj*(rg.col(rate_idx)*(rn.col(rate_idx)-obj_rate))/1000000); // plasticity and decay               
-                jt += dt*(lrj*(rg.col(rate_idx)*(rn.col(rate_idx)-obj_rate))/1000000); // plasticity                 
+                if (with_decay) {
+                    jt += dt*(-jt/taoj + lrj*(rg.col(rate_idx)*(rn.col(rate_idx)-obj_rate))/1000000); // plasticity and decay               
+                }else{
+                    jt += dt*(lrj*(rg.col(rate_idx)*(rn.col(rate_idx)-obj_rate))/1000000); // plasticity
+                };                
+                //jt += dt*(lrj*(rg.col(rate_idx)*(rn.col(rate_idx)-obj_rate))/1000000); // plasticity                 
                 fic.col(fic_idx) = jt; // saving
             }
 
@@ -436,7 +443,7 @@ public:
             bold_timer += std::chrono::duration <double, std::milli> (diff).count();
 
         }
-        std::cout << "Ending simulation";
+        std::cout << "Ending beautiful simulation has option 2 ";
         if (return_bold) {
             bold_int.join();
 
