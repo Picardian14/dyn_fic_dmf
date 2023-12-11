@@ -1,3 +1,4 @@
+dist/
 Eigen/
 __pycache__/
 build/
