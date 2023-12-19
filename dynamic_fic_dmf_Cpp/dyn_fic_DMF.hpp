@@ -443,7 +443,7 @@ public:
             bold_timer += std::chrono::duration <double, std::milli> (diff).count();
 
         }
-        std::cout << "Ending beautiful simulation has option 2 ";
+        
         if (return_bold) {
             bold_int.join();
 
