@@ -205,9 +205,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
 
     // Run, passing results by reference
-    try {
-      DMFSimulator sim(params, nb_steps, N, return_rate, return_bold); 
-      //DMFSimulator sim(params, nb_steps, N, return_rate, return_bold, return_fic); // aqui agregué
+    try {      
+      DYN_FIC_DMFSimulator sim(params, nb_steps, N, return_rate, return_bold, return_fic,true,true); // I am using matlab to test something where i will always use decay and plasticity
       sim.run(safeGet(rate_e_res),safeGet(rate_i_res), safeGet(bold_res), safeGet(fic_res));
       
     } catch (...) {
