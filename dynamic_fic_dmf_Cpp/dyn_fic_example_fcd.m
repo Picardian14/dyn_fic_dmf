@@ -1,6 +1,6 @@
-%% Ejemplo FCd
+ %% Ejemplo FCd
 % Fetch default parameters
-load ../SC_and_5ht2a_receptors.mat
+load SC_and_5ht2a_receptors.mat
 C = 0.2.*sc90./max(sc90(:));
 params = dyn_fic_DefaultParams('C',C);
 N=length(params.C);

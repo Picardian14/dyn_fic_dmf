@@ -1,4 +1,9 @@
 dist/
+matlab/Results/
+python/Results/
+matlab/outputs/
+matlab/plots/
+python/data/
 Eigen/
 __pycache__/
 build/

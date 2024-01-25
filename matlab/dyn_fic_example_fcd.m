@@ -5,7 +5,7 @@ C = 0.2.*sc90./max(sc90(:));
 params = dyn_fic_DefaultParams('C',C);
 N=length(params.C);
 % Setting model parameters
-params.G = 4;
+params.G = 2;
 params.seed = 1;
 % FIC parameters
 % params.J = 0.75*params.G*sum(params.C, 1)' + 1; % FIC initial value
@@ -13,8 +13,8 @@ params.J = 0.75*params.G*sum(params.C, 1)' + 1; % FIC initial value
 params.obj_rate = 3.44; % FIC objective rate
 
 % ---------------------- Parameters for edge/slow oscillations with G=4
-params.lrj = 10; % FIC learning Rate
-params.taoj = 30000; % FIC decay
+params.lrj = 30; % FIC learning Rate
+params.taoj = 20000; % FIC decay
 
 % ---------------------- Parameters for high frequency oscillations with G=4
 % params.lrj = 10; % FIC learning Rate
@@ -29,9 +29,6 @@ params.taoj = 30000; % FIC decay
 brunout = 5; % seconds
 nb_steps = 100000;
 
-
-params.lrj = 40.877;
-params.taoj = 55387;
 
 [rates, rates_inh, fic_t] = dyn_fic_DMF(params, nb_steps,'ratefic');
 
@@ -86,14 +83,14 @@ subplot(3,5,1:5)
 % Plot the main plot with the left y-axis
 subplot(3, 5, 1:5)
 yyaxis left
-plot(sel_t * 0.1, mean(rates_inh(:, sel_t)), 'b'); hold on
-plot(sel_t * 0.1, mean(rates(:, sel_t)), 'r');
+plot(sel_t / 1000, mean(rates_inh(:, sel_t)), 'b'); hold on
+plot(sel_t / 1000, mean(rates(:, sel_t)), 'r');
 xlabel('Time (s)')
 ylabel('E Firing Rates (Hz)')
 
 % Create a second y-axis for fic_t on the right side
 yyaxis right
-plot(sel_t * 0.1, mean(fic_t(:, sel_t)), 'color', [0 0.5 0]); % Customizing color for fic_t
+plot(sel_t / 1000, mean(fic_t(:, sel_t)), 'color', [0 0.5 0]); % Customizing color for fic_t
 ylabel('FIC Y-axis') % Replace 'FIC Y-axis Label' with the appropriate label for fic_t
 hold off
 
@@ -101,11 +98,11 @@ hold off
 subplot(3,5,6:10)
 
 
-plot(sel_t_bold,filt_bold(sel_t_bold,:));
-set(gca,'xticklabel',(sel_t_bold-1).*params.TR);
-xlim([0 sel_t_bold(end)])
-xlabel('Time (s)')
-ylabel('BOLD(Hz)')
+%plot(sel_t_bold,filt_bold(sel_t_bold,:));
+%set(gca,'xticklabel',(sel_t_bold-1).*params.TR);
+%xlim([0 sel_t_bold(end)])
+%xlabel('Time (s)')
+%ylabel('BOLD(Hz)')
 
 subplot(3,5,11)
 bar(mean(rates,2),'edgecolor','none');hold on
@@ -121,44 +118,22 @@ title('FC Rates')
 colorbar
 
 subplot(3,5,13)
-imagesc(bold_fc-eye(N))
-axis square
-title('FC BOLD')
-colorbar
-
-%
-% Define parameters
-Fs = 10000; % Sampling frequency
-T = 1/Fs; % Sampling period
-L = size(rates,2); % Length of signal
-bandwith_NW = 32*(10000/size(rates,2));
-freqs = [0 100];
-[PSD, f] = pmtm(rates(1,:), 30, [], Fs,freqs);
-lowFreqRange = [1 4]; % Specify your low frequency range (e.g., 0 to 10 Hz)
-lowFreqIndices = find(f >= lowFreqRange(1) & f <= lowFreqRange(2));
-totalPower = sum(PSD); % Total power
-lowFreqPower = sum(PSD(lowFreqIndices)); % Power in the low frequency range
-ratioLowToTotal = lowFreqPower / totalPower;
-
-
-%
-
-desiredFreqRange = [0 100]; % Specify the desired frequency range
-
-% Find indices corresponding to the desired frequency range
-freqIndices = find(f >= desiredFreqRange(1) & f <= desiredFreqRange(2));
+%imagesc(bold_fc-eye(N))
+%axis square
+%title('FC BOLD')
+%colorbar
 
 
 subplot(3,5,14)
-plot(f(freqIndices), PSD(freqIndices));
-ylim([min(PSD(freqIndices)),max(PSD(freqIndices))])
-xlabel('Frequencies')
-ylabel('Power')
+%plot(f(freqIndices), PSD(freqIndices));
+%ylim([min(PSD(freqIndices)),max(PSD(freqIndices))])
+%xlabel('Frequencies')
+%ylabel('Power')
 
 subplot(3,5,15)
-imagesc(fcd)
-axis square
-title('FCD')
-colorbar
+%imagesc(fcd)
+%axis square
+%title('FCD')
+%colorbar
 
 
