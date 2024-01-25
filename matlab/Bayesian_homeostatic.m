@@ -1,14 +1,14 @@
 clear all;
 close all;
-
+mex ../dynamic_fic_dmf_Cpp/dyn_fic_DMF.cpp
 load SC_and_5ht2a_receptors.mat
 C = 0.2.*sc90./max(sc90(:));
 stren = sum(C)./2;
 params = dyn_fic_DefaultParams('C',C);
 N=length(params.C);
 
-
-%parpool('local', 16);
+disp("Amoount of available processes: "+maxNumCompThreads);
+parpool('local', maxNumCompThreads);
 
 bo_opts = {'IsObjectiveDeterministic',true,'UseParallel',true,... %% Will be determinsitic so we do not estimate error
         'MinWorkerUtilization',4,...
@@ -27,7 +27,7 @@ DECAY_range = [100,100000];
 % G and OBJ_RATE may change
 G_span = 0:0.5:6;
 
-%
+
 params.obj_rate = 3.44;
 for seed=11:20
 folder_name = sprintf('Results/OBJ_RATE3-44/%d', seed); % Create folder name based on seed number
@@ -108,6 +108,40 @@ for it = 1:20
     XatMinObjectiveList122(:,it) = [loadedData.results.XAtMinObjective{1,1};loadedData.results.XAtMinObjective{1,2}];
     ObjectiveList122(it) = loadedData.results.MinObjective;
 end
+%%
+
+%%
+optimal_decay_lr = zeros(2, 20, 20); % Assuming you have 30 iterations
+min_reached = zeros(20,20);
+g_span_hom_fit = zeros(17,20,20);
+for seed=1:20
+  disp("Seed" +seed);
+for it = 1:20    
+    disp("It" +it);
+    filename = sprintf('./Results/OBJ_RATE3-44/%d/iter_%d.mat',seed, it);       
+    loadedData = load(filename);       
+    optimal_decay_lr(:,seed,it) = [loadedData.results.XAtMinObjective{1,1};loadedData.results.XAtMinObjective{1,2}];
+    min_reached(seed,it) = loadedData.results.MinObjective;
+    g_span_hom_fit(:,seed,it) = loadedData.results.UserDataTrace{loadedData.results.IndexOfMinimumTrace(end)}{1};
+end
+end
+%%
+decay = squeeze(optimal_decay_lr(1,:,:));
+decay = reshape(decay, [20*20,1]);
+[sorted_decay, sorted_indices] = sort(decay);
+
+% Reorder decay
+decay = sorted_decay;
+
+% Reorder flat_g_hom using the sorted indices for the second axis
+flat_g_hom_sorted = flat_g_hom(:, sorted_indices);
+%%
+% Create a heatmap
+figure;imagesc(flat_g_hom_sorted);yticks(yticks_a);yticklabels(ytickslabels_a);colorbar;
+
+% Add labels and title
+
+
 %%
 % Scatter plot 1 with XatMinObjectiveList122 and XatMinObjectiveList344
 figure;

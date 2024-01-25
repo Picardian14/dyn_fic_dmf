@@ -12,7 +12,7 @@ if length(decay(:))==2
 end
 
 if length(lr(:))==2 
-    lr = optimizableVariable('lr',[lr(1) lr(2)]);
+    lr = optimizableVariable('lr',[lr(1) lr(2)], 'Transform','log');
     opt_vars = [opt_vars lr];
 end
 
@@ -35,24 +35,14 @@ results = bayesopt(@aux_dyn_fic_dmf,opt_vars,opts{:});
             rates = rates(:, (thispars.burnout*1000):end);
             reg_fr = mean(rates,2);
             fr_list(idx,:) = reg_fr;
-
-            Fs = 10000; % Sampling frequency            
-            freqs = [0 100];
-            [PSD, f] = pmtm(rates(1,:), 30, [], Fs,freqs); % ONLY DOING IT ON ONE REGION BECAUSE IT TAKES TOO LONG IF NOT
-            lowFreqRange = [1 4]; % Specify your low frequency range (e.g., 0 to 10 Hz)
-            lowFreqIndices = find(f >= lowFreqRange(1) & f <= lowFreqRange(2));
-            totalPower = sum(PSD); % Total power
-            lowFreqPower = sum(PSD(lowFreqIndices)); % Power in the low frequency range
-            ratioLowToTotal = lowFreqPower / totalPower;
-            plow_ptot_list(idx) = ratioLowToTotal;
             rates_fc = corrcoef(rates');
-            corr_list(idx) = corr2(rates_fc,dmf_pars.C);
+            corr_list(idx) = corr2(rates_fc-eye(length(dmf_pars.C)),dmf_pars.C);
             homeostatic_fittness_list(idx) = abs(thispars.obj_rate - mean(reg_fr));
         end
         mean_fit = squeeze(mean(homeostatic_fittness_list));
         std_fit = squeeze(std(homeostatic_fittness_list));
-        homeostatic_fittness = mean_fit + 0.25 * mean_fit * std_fit;
-        outdata = {homeostatic_fittness_list, corr_list, plow_ptot_list,fr_list};
+        homeostatic_fittness = mean_fit + 0.35 * mean_fit * std_fit;
+        outdata = {homeostatic_fittness_list, corr_list,fr_list};
     end
 end
 
