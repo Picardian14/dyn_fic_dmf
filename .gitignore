@@ -1,3 +1,6 @@
+matlab/outputs/
+matlab/Results/
+*.mexa64
 dist/
 Eigen/
 __pycache__/
