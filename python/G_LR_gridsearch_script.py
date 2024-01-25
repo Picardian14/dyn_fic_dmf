@@ -8,7 +8,11 @@ from scipy.io import loadmat
 from scipy.stats import zscore, pearsonr
 import numpy as np
 import matplotlib.pyplot as plt
+<<<<<<< HEAD
 from mne.time_frequency import psd_array_multitaper
+=======
+#from mne.time_frequency import psd_array_multitaper
+>>>>>>> 4cb35af114726fe73b45a2add6fbac10d7ba9c77
 
 
 def compute_fcd(data, wsize, overlap, isubdiag):

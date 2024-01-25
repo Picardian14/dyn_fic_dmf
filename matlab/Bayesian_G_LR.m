@@ -22,20 +22,19 @@ bo_opts = {'IsObjectiveDeterministic',true,'UseParallel',true,... %% Will be det
 % Setting model parameters
 params.nb_steps = 100000;
 params.burnout = 5;
-
-G_span = 0:0.5:1;%0:0.5:12;
-%
+LR_range = [0.1,1000];
+G_span = 0:0.5:12;
+%%
 params.obj_rate = 3.44;
-fitResult= load("./Results/LogFit344.mat").fitResult
-LR_range = logspace(-1,2,2)
+fitResult= load("./Results/LogFit344.mat").fitResult;
+LR_range = logspace(-1,2,100);
 num_freqs = 1000;
 all_PSD = zeros(length(LR_range),length(G_span), num_freqs, N);
 all_freqs = zeros(length(LR_range),length(G_span), num_freqs);
 
 
-
-    for idx_LR=1:length(LR_range)
-        for idx_G=1:length(G_span)
+for idx_LR=1:length(LR_range)
+    parfor idx_G=1:length(G_span)
         thispars = params;
         thispars.G = G_span(idx_G);
         thispars.lrj = LR_range(idx_LR);
@@ -50,3 +49,4 @@ end
 
 save("./Results/PSD_G_LR.max","all_PSD");
 save("./Results/freqs_G_LR.max","all_freqs");
+EOF
