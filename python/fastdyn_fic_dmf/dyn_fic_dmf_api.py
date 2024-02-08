@@ -94,6 +94,12 @@ def default_params(**kwargs):
     # Parallel computation parameters
     params['batch_size'] = 5000
 
+    # Calculation options
+    params["return_bold"] = False
+    params["return_rate"] = True
+    params["return_fic"] = False
+    params["with_decay"] = True
+    params["with_plasticity"] = True
     # Add/replace remaining parameters
     for k, v in kwargs.items():
         params[k] = v
@@ -105,7 +111,7 @@ def default_params(**kwargs):
     return params
 
 
-def run(params, nb_steps, return_rate=False, return_bold=True,return_fic=False, with_decay=True, with_plasticity=True):
+def run(params, nb_steps):
     """
     Run the DMF model and return simulated brain activity. Size and number of
     output arguments depends on desired_out.
@@ -118,10 +124,6 @@ def run(params, nb_steps, return_rate=False, return_bold=True,return_fic=False, 
     nb_steps : int
         Number of integration steps to compute. Final size of the simulated
         time series depends on selected dt and TR.
-
-    return_x : bool
-        Current three output options. If false, the returned array will only contain a batch of values and not the entire time series
-
     Returns
     -------
     out : list
@@ -131,11 +133,11 @@ def run(params, nb_steps, return_rate=False, return_bold=True,return_fic=False, 
     # Pre-allocate memory for results
     N = params['C'].shape[0]
     nb_steps_bold = round(nb_steps*params['dtt']/params['TR'])
-    if return_rate:
+    if params["return_rate"]:
         nb_steps_rate = nb_steps
     else:
         nb_steps_rate = 2*params['batch_size']
-    if return_fic:
+    if params["return_fic"]:
         nb_steps_fic = nb_steps
     else:
         nb_steps_fic = 2*params['batch_size']
@@ -147,8 +149,7 @@ def run(params, nb_steps, return_rate=False, return_bold=True,return_fic=False, 
 
 
     # Run simulation
-    sim = _DYN_FIC_DMF.DYN_FIC_DMF(_format_dict(params), nb_steps, N, return_rate, return_bold, return_fic, with_decay,with_plasticity)
-    print("Calling run")
+    sim = _DYN_FIC_DMF.DYN_FIC_DMF(_format_dict(params), nb_steps, N)    
     sim.run(rate_e_res, rate_i_res,bold_res, fic_res)
 
 

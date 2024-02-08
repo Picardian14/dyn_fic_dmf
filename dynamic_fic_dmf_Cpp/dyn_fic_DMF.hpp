@@ -82,7 +82,8 @@ void checkParams(const ParamStruct &params) {
     std::vector<std::string> required_fields = {"C", "receptors", "dt",
             "taon", "taog", "gamma", "sigma", "JN", "I0", "Jexte", "Jexti",
             "w", "g_e", "Ie", "ce", "g_i", "Ii", "ci", "wgaine", "wgaini",
-            "lrj","taoj","obj_rate","G", "TR", "dtt", "batch_size"}; // added ljr, taoj and obj_rate as parameters of fic dynamics
+            "lrj","taoj","obj_rate","G", "TR", "dtt", "batch_size",
+            "return_rate", "return_bold","return_fic", "with_plasticity", "with_decay"}; // added ljr, taoj and obj_rate as parameters of fic dynamics
     for (const auto& field : required_fields) {
         if (!params.count(field.c_str())) {
             std::string s("Missing field in parameter struct: ");
@@ -306,14 +307,9 @@ public:
      * @param params Matlab struct with all necessary parameters (see checkArguments)
      * @param nb_steps_in number of firing rate steps to simulate
      * @param N_in number of nodes/ROIs in the model
-     * @param return_rate_in boolean, whether to return firing rates
-     * @param return_bold_in boolean, whether to return BOLD activity     
-     * @param return_fic_in boolean, whether to return FIC values
-     * @param with_decay_in boolean, whether to use decay when calculating FIC
-     * @param with_plasticity_in boolean, whether to use decay when calculating FIC
+
      */
-    DYN_FIC_DMFSimulator(ParamStruct params, size_t nb_steps_in, size_t N_in,
-                 bool return_rate_in, bool return_bold_in, bool return_fic_in, bool with_decay_in,bool with_plasticity_in) :
+    DYN_FIC_DMFSimulator(ParamStruct params, size_t nb_steps_in, size_t N_in) :
             dt(params["dt"][0]),
             I0(params["I0"][0]),
             w(params["w"][0]),
@@ -339,11 +335,11 @@ public:
             N(N_in),
             batch_size(params["batch_size"][0]),
             steps_per_millisec(1.0/params["dt"][0]),
-            return_rate(return_rate_in),
-            return_bold(return_bold_in),
-            return_fic(return_fic_in),
-            with_decay(with_decay_in),
-            with_plasticity(with_plasticity_in),
+            return_rate(params["return_rate"][0]),
+            return_bold(params["return_bold"][0]),
+            return_fic(params["return_fic"][0]),
+            with_decay(params["with_decay"][0]),
+            with_plasticity(params["with_plasticity"][0]),
             sn(N_in),
             sg(N_in),
             bold_int(params, nb_steps, N_in) {

@@ -82,8 +82,8 @@ class DYN_FIC_DMF : public DYN_FIC_DMFSimulator {
 
 public:
 
-  DYN_FIC_DMF(bp::dict d, size_t nb_steps, size_t N, bool return_rate, bool return_bold, bool return_fic,bool with_decay,bool with_plasticity) :
-    DYN_FIC_DMFSimulator(struct2map(d), nb_steps, N, return_rate, return_bold, return_fic, with_decay, with_plasticity) {}
+  DYN_FIC_DMF(bp::dict d, size_t nb_steps, size_t N) :
+    DYN_FIC_DMFSimulator(struct2map(d), nb_steps, N) {}
 
   void run(np::ndarray rate_e_res,np::ndarray rate_i_res, np::ndarray bold_res,np::ndarray fic_res) {
     DYN_FIC_DMFSimulator::run(safeGet(rate_e_res),safeGet(rate_i_res),safeGet(bold_res), safeGet(fic_res));
@@ -96,7 +96,7 @@ BOOST_PYTHON_MODULE(_DYN_FIC_DMF) {
     Py_Initialize();
     np::initialize();
 
-    bp::class_<DYN_FIC_DMF, boost::noncopyable>("DYN_FIC_DMF", bp::init<bp::dict, size_t, size_t, bool, bool, bool, bool, bool>())
+    bp::class_<DYN_FIC_DMF, boost::noncopyable>("DYN_FIC_DMF", bp::init<bp::dict, size_t, size_t>())
           .def("run", &DYN_FIC_DMF::run);
 
 }
