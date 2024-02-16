@@ -1,5 +1,9 @@
 matlab/outputs/
 matlab/Results/
+python/Results/
+python/outputs/
+python/data/
+Figures/
 *.mexa64
 dist/
 Eigen/
