@@ -13,7 +13,7 @@
 #include<iostream>
 #include<random>
 #include<map>
-
+using namespace std;
 #include "Eigen/Dense"
 
 typedef std::map<std::string, const double*> ParamStruct;
@@ -202,9 +202,9 @@ public:
 
       ds = ( r.col(idx % rate_buffer_size) - itaus*s - itauf*(f - 1) );
       df = s;
-      dv = itauo*(f - v.pow(ialpha));
+      dv = itauo*(f - v.pow(ialpha));      
       dq = itauo*(f*(1-pow(1-Eo, 1/f))/Eo - (v.pow(ialpha-1))*q);
-
+      
       Z += dt*dZ;
       count++;
 
@@ -370,7 +370,7 @@ public:
 
 
     void run(double* rate_e_res,double* rate_i_res, double* bold_res, double* fic_res) {
-
+        cout << "Debuging bold";
         // Initialise BOLD integrator if needed
         if (return_bold) { bold_int.init(rate_e_res, bold_res); }        
         double bold_timer = 0;
