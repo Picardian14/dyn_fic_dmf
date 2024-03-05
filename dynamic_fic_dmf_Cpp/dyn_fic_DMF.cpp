@@ -107,35 +107,28 @@ void checkArguments( int nlhs, mxArray *plhs[],
       }
     }
     
-    /* make sure the third input argument, if provided, is type char */
-    if( (nrhs == 3) && !mxIsChar(prhs[2]) ) {
-        mexErrMsgIdAndTxt("DMF:notChar","Third input (if provided) must be type char. This means using single quotes (\') instead of double quotes (\") where appropriate.");
-    }
-    
+   ParamStruct params =  struct2map(prhs[0]);
+    bool return_rate=params["return_rate"], return_bold=params["return_bold"], return_fic=params["return_fic"]; // 'bold' is the default
+    bool with_plasticity=params["with_plasticity"], with_decay=params["with_decay"];
     // Check that number of outputs matches input config
     size_t target_outs;
-    if (nrhs == 2) {
-        target_outs = 1;
+    size_t rate_outs, fic_outs, bold_outs;
+    if (return_rate) {
+       rate_outs = 2;
     } else {
-        char *buf = (char*) mxArrayToString(prhs[2]);
-        std::string desired_out = std::string(buf);
-        if (desired_out == "all"){
-            target_outs = 4;
-        }
-        else if (desired_out == "ratebold") {
-            target_outs = 3;
-        } else if (desired_out == "ratefic") {
-            target_outs = 3;
-        } else if (desired_out == "ficbold") {
-            target_outs = 2;
-        } else if (desired_out == "rate") {
-            target_outs = 2;
-        } else if (desired_out == "fic") {
-            target_outs = 1;
-        } else {
-            target_outs = 1;
-        }
+        rate_outs = 0;
     }
+    if (return_bold) {
+       bold_outs = 1;
+    } else {
+        bold_outs = 0;
+    }
+    if (return_fic) {
+       fic_outs = 1;
+    } else {
+        fic_outs = 0;
+    }
+    target_outs = rate_outs+bold_outs+fic_outs;
     if (nlhs != target_outs) {
         mexErrMsgIdAndTxt("DMF:badOutputs","Wrong number of output arguments.");
     }
@@ -158,37 +151,11 @@ void mexFunction( int nlhs, mxArray *plhs[],
     size_t nb_steps = (size_t) safeGet(prhs[1])[0];
 
     // Third input argument: desired output
-    bool return_rate=false, return_bold=true, return_fic=false; // 'bold' is the default
-    //bool return_rate=false, return_bold=true;
-    if (nrhs > 2) {
-      char *buf = (char*) mxArrayToString(prhs[2]);
-      std::string desired_out = std::string(buf);
-        if (desired_out == "ratebold") { // 'ratebold' option from when only FR and BOLD was returned
-            return_rate = true;
-            return_bold = true;
-            return_fic= false;
-        } else if (desired_out == "ratefic") { 
-            return_rate = true;
-            return_bold = false;
-            return_fic= true;            
-        } else if (desired_out == "ficbold") { 
-            return_rate = true;
-            return_bold = true;
-            return_fic= false;            
-        } else if (desired_out == "rate") {
-            return_rate = true;
-            return_bold = false;
-            return_fic= false;  
-        } else if (desired_out == "fic") {
-            return_rate = true;
-            return_bold = false;
-            return_fic= false;  
-        } else if (desired_out == "all") { // For now BOLD, FR and FIC
-            return_rate = true;
-            return_bold = true;
-            return_fic= true;
-        }
-    }
+    bool return_rate=params["return_rate"], return_bold=params["return_bold"], return_fic=params["return_fic"]; // 'bold' is the default
+    bool with_plasticity=params["with_plasticity"], with_decay=params["with_decay"];
+
+   
+
 
 
     // Pre-allocate memory for results using Matlab's factory.
@@ -206,7 +173,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
     // Run, passing results by reference
     try {      
-      DYN_FIC_DMFSimulator sim(params, nb_steps, N, return_rate, return_bold, return_fic,true,true); // I am using matlab to test something where i will always use decay and plasticity
+      DYN_FIC_DMFSimulator sim(params, nb_steps, N); // I am using matlab to test something where i will always use decay and plasticity
       sim.run(safeGet(rate_e_res),safeGet(rate_i_res), safeGet(bold_res), safeGet(fic_res));
       
     } catch (...) {
@@ -218,8 +185,9 @@ void mexFunction( int nlhs, mxArray *plhs[],
     if (return_rate && return_bold && return_fic){
         plhs[0] = rate_e_res;
         plhs[1] = rate_i_res;
+          plhs[2] = bold_res;   
         plhs[3] = fic_res;
-        plhs[2] = bold_res;  
+        
     } else if (return_rate && return_bold) {
         plhs[0] = rate_e_res;
         plhs[1] = rate_i_res;
