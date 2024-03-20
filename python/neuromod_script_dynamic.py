@@ -39,8 +39,8 @@ params["return_rate"] = True
 params["return_bold"] = True
 params["return_fic"] = True
 # These are now default true
-params["with_plasticity"] = False
-params["with_decay"] = False
+params["with_plasticity"] = True
+params["with_decay"] = True
 
 isubfcd = np.triu_indices(C.shape[1],1)
 burnout = 7
@@ -148,7 +148,7 @@ arrays_to_save = {
     
 }
 
-results_folder = "./Results/neuromod/static"
+results_folder = "./Results/neuromod/dynamic"
 
 # Save
 for array_name, array_data in arrays_to_save.items():
