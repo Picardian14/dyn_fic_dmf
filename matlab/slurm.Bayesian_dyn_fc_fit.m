@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH --time=24:00:00
-#SBATCH --job-name=dyn_fc_fit
+#SBATCH --job-name=Above1GandLRrange_dyn_fc
 #SBATCH --mail-type=END
 #SBATCH --mail-user=
 #SBATCH --mem=32G
-#SBATCH --cpus-per-task=24
-#SBATCH --output=outputs/dyn_fc_fit.out
-#SBATCH --error=outputs/dyn_fc_fit.err
+#SBATCH --cpus-per-task=12
+#SBATCH --output=outputs/Above1GandLRrange_dyn_fc.out
+#SBATCH --error=outputs/Above1GandLRrange_dyn_fc.err
 
 ml MATLAB/R2022b
 matlab -nodisplay<<-EOF
@@ -14,13 +14,25 @@ matlab -nodisplay<<-EOF
 clear all;
 close all;
 addpath ../dynamic_fic_dmf_Cpp Results/ functions/ outputs/ data/
-SEED = 1;
+sub_experiment_name = "Above1GandLRrange";
 %mex ../dynamic_fic_dmf_Cpp/dyn_fic_DMF.cpp
 % Load Data
 load data/SC_and_5ht2a_receptors.mat
 C = 0.2.*sc90./max(sc90(:));
-stren = sum(C)./2;
+stren = sum(C);
 params = dyn_fic_DefaultParams('C',C);
+% Setting model parameters
+% training
+params.fit_fc = true;
+params.fit_fcd = false;
+% tpye of fic calculation
+params.with_decay=true;
+params.with_plasticity=true;
+% return type
+params.return_bold=true;
+params.return_rate=true;
+params.return_fic=true;
+params.obj_rate = 3.44;
 % basic model parameters
 params.TR = 2.4;
 params.flp = 0.01; 
@@ -54,10 +66,10 @@ end
 WFCdata = permute(WFCdata, [2,3,1]);
 WFCdataF = permute(WFCdataF, [2,3,1]);
 emp_fc = mean(WFCdataF,3);
-NHOURS = 16;
+NHOURS = 12;
 % bayesian model params
-checkpoint_file = 'Results/dyn_fc/results_v0.mat';
-bo_opts = {'IsObjectiveDeterministic',true,'UseParallel',true,... %% Will be determinsitic so we do not estimate error
+checkpoint_file = "Results/dyn_fc/results_"+sub_experiment_name+".mat";
+bo_opts = {'IsObjectiveDeterministic',false,'UseParallel',true,... %% Will be determinsitic so we do not estimate error
         'MinWorkerUtilization',4,...
         'AcquisitionFunctionName','expected-improvement-plus',...
         'MaxObjectiveEvaluations',1e16,...
@@ -68,13 +80,7 @@ bo_opts = {'IsObjectiveDeterministic',true,'UseParallel',true,... %% Will be det
         'PlotFcn', {@plotObjectiveModel,@plotMinObjective}};
         %'OutputFcn',@stoppingCriteria,...        %% We leave it running without criteria
 
-% Setting model parameters
-params.return_rate=true;
-params.return_fic=true;
-params.return_bold=true;
-params.with_plasticity=true;
-params.with_decay=true;
-params.obj_rate = 3.44;
+
 
 
 
@@ -84,18 +90,17 @@ params.nwins = length(params.win_start);
 %int((data.shape[-1]-burnout)*params['TR']/params['dtt'])
 
 params.nb_steps = fix((params.T)*params.TR)/params.dtt; % Generate the same amount of time points ant then remove the transient period
-LR_range = [0.1 1000];
-G_range = [0 16];
+LR_range = [1 1000];
+G_range = [1 16];
+params.LR_range = LR_range;
+params.G_range = G_range;
 % seed fixed for a training
-params.seed = SEED;
-% training
-params.fit_fc = true;
-params.fit_fcd = false;
-%
+%params.seed = sub_experiment_name;
+
 results = dynamic_fitting(G_range,LR_range,params,bo_opts, emp_fc);
 close all;
 % save results
-filename = sprintf('Results/dyn_fc/seed_%d.mat',params.seed); % Create filename
+filename = sprintf('Results/dyn_fc/%s.mat',sub_experiment_name); % Create filename
 save(filename, 'results'); % Save results in a .mat file
 
 EOF

@@ -4,7 +4,7 @@
 #SBATCH --mail-type=END
 #SBATCH --mail-user=
 #SBATCH --mem=32G
-#SBATCH --cpus-per-task=24
+#SBATCH --cpus-per-task=12
 #SBATCH --output=outputs/stat_fcd_fit.out
 #SBATCH --error=outputs/stat_fcd_fit.err
 
@@ -14,13 +14,17 @@ matlab -nodisplay<<-EOF
 clear all;
 close all;
 addpath ../dynamic_fic_dmf_Cpp Results/ functions/ outputs/ data/
-SEED = 1;
-%mex ../dynamic_fic_dmf_Cpp/dyn_fic_DMF.cpp
+
+sub_experiment_name = "GoodRange_2";
+
 % Load Data
 load data/SC_and_5ht2a_receptors.mat
 C = 0.2.*sc90./max(sc90(:));
 stren = sum(C)./2;
 params = dyn_fic_DefaultParams('C',C);
+% Fitting params
+params.fit_fc = false;
+params.fit_fcd = true;
 % basic model parameters
 params.TR = 2.4;
 params.flp = 0.01; 
@@ -55,11 +59,11 @@ end
 WFCdata = permute(WFCdata, [2,3,1]);
 WFCdataF = permute(WFCdataF, [2,3,1]);
 emp_fc = mean(WFCdataF,3);
-NHOURS = 16;
+NHOURS = 24;
 % bayesian model params
-checkpoint_file = 'Results/stat_fcd/results_v0.mat';
-bo_opts = {'IsObjectiveDeterministic',true,'UseParallel',true,... %% Will be determinsitic so we do not estimate error
-        'MinWorkerUtilization',4,...
+checkpoint_file = "Results/stat_fcd/results_"+sub_experiment_name+".mat";
+bo_opts = {'IsObjectiveDeterministic',false,'UseParallel',true,... %% Will be determinsitic so we do not estimate error
+        'MinWorkerUtilization',8,...
         'AcquisitionFunctionName','expected-improvement-plus',...
         'MaxObjectiveEvaluations',1e16,...
         'ParallelMethod','clipped-model-prediction',...
@@ -85,18 +89,16 @@ params.nwins = length(params.win_start);
 %int((data.shape[-1]-burnout)*params['TR']/params['dtt'])
 
 params.nb_steps = fix((params.T)*params.TR)/params.dtt; % Generate the same amount of time points ant then remove the transient period
-ALPHA_range = [0.05 1];
-G_range = [0 16];
+ALPHA_range = [0.65 0.85];
+G_range = [1 5];
 % seed fixed for a training
-params.seed = SEED;
+%params.seed = sub_experiment_name;
 % training
-params.fit_fc = true;
-params.fit_fcd = false;
 %
 results = static_fitting(G_range,ALPHA_range,params,bo_opts, emp_fcd);
 close all;
 % save results
-filename = sprintf('Results/stat_fcd_fit/seed_%d.mat',params.seed); % Create filename
+filename = sprintf('Results/stat_fcd/%s.mat',sub_experiment_name); % Create filename
 save(filename, 'results'); % Save results in a .mat file
 
 EOF

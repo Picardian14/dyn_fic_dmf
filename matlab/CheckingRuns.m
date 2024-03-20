@@ -1,15 +1,3 @@
-#!/bin/bash
-#SBATCH --time=24:00:00
-#SBATCH --job-name=dyn_fcd_fit
-#SBATCH --mail-type=END
-#SBATCH --mail-user=
-#SBATCH --mem=32G
-#SBATCH --cpus-per-task=12
-#SBATCH --output=outputs/dyn_fcd_fit.out
-#SBATCH --error=outputs/dyn_fcd_fit.err
-
-ml MATLAB/R2022b
-matlab -nodisplay<<-EOF
 
 clear all;
 close all;
@@ -20,20 +8,23 @@ sub_experiment_name = "GoodRange_2";
 load data/SC_and_5ht2a_receptors.mat
 C = 0.2.*sc90./max(sc90(:));
 params = dyn_fic_DefaultParams('C',C);
-% Fitting params
+stren = sum(params.C);
+% FITTING PARAMS
 params.fit_fc = false;
 params.fit_fcd = true;
-% type of fic calculation
+
+% TYPE OF FIC CALC
 params.with_plasticity=true;
 params.with_decay=true;
-% Setting model parameters
+
+% OUTPUT model parameters
 params.return_rate=true;
 params.return_fic=true;
 params.return_bold=true;
-
 params.obj_rate = 3.44;
 
-% basic model parameters
+
+%% basic model parameters
 params.TR = 2.4;
 params.flp = 0.01; 
 params.fhi = 0.1; 
@@ -98,11 +89,81 @@ G_range = [1 16];
 %params.seed = sub_experiment_name;
 % training
 
+coeffs = load("data/LinearFitCoefficients.mat");
+a = coeffs.a;
+b = coeffs.b;
 %%
-results = dynamic_fitting(G_range,LR_range,params,bo_opts, emp_fcd);
-close all;
-% save results
-filename = sprintf('Results/dyn_fcd/%s.mat',sub_experiment_name); % Create filename
-save(filename, 'results'); % Save results in a .mat file
+params.G = 4.21; % 2.9 for minObjective
 
-EOF
+params.alpha = 0.75; % 0.76
+
+params.lrj = 44.37;                          
+params.taoj = exp(a+log(params.lrj)*b);
+% save a safe copy to send to dyn_fic function
+if params.with_plasticity
+    params.J = 0.75*params.G*stren' + 1; % updates it
+else
+    params.J = params.alpha*params.G*stren' + 1; % updates it
+end
+%% Running
+[rates, rates_inh, bold, fic_t] = dyn_fic_DMF(params, params.nb_steps);
+
+%% Processing
+% takeout transient simulation
+rates = rates(:, (params.burnout*params.TR/params.dtt):end);
+%all_rates(idx, :) = mean(rates, 2);
+bold = bold(:,params.burnout:end); % remove initial transient
+bold(isnan(bold))=0;
+bold(isinf(bold(:)))=max(bold(~isinf(bold(:))));
+if isempty(bold)      
+    disp("G: "+params.G+" LR: "+params.lrj+" Gave empty bold");
+    out_error = nan;
+    return
+end
+% Filtering and computing FC
+filt_bold = filter_bold(bold',params.flp,params.fhi,params.TR);
+isubfc = find(tril(ones(params.N),-1));
+if params.fit_fc
+    sim_fc = corrcoef(filt_bold);
+    %all_sim_fc(idx, :, :) = sim_fc;
+elseif params.fit_fcd      
+    disp("calculo fcd")
+    sim_fcd = compute_fcd(filt_bold,params.wsize,params.overlap,isubfc);
+    sim_fcd(isnan(sim_fcd))=0;
+    sim_fcd = corrcoef(sim_fcd);
+    if isempty(sim_fcd)                    
+        sim_fcd = zeros(size(sim_fcd));
+        return
+    end
+    %all_sim_fcd(idx, :, :) = sim_fcd;
+else
+    disp('error: target observable not set')
+    out_error=nan; 
+end
+
+if params.fit_fc
+    %mean_fc = mean(all_sim_fc, 1);
+    % SOLO ESTOY COMPARANDO CON 1 FC
+    disp("Error corr")
+    out_error = 1-corr2(sim_fc(isubfc),emp_fc(isubfc));
+elseif params.fit_fcd             
+    % SOLO ESTOY COMPARANDO CON 1 FC      
+    try
+        [~,~,out_error] = kstest2(sim_fcd(:),emp_fcd(:));
+    catch E
+        disp(E)
+        disp("G: "+ params.G);
+        disp("LR: "+ params.lrj);
+        if isempty(sim_fcd)                    
+            disp("FCD Was empty ");
+        end
+        out_error=1;
+    end
+else
+    disp('error: target observable not set')
+    out_error=nan;      
+end
+%mean_rates = mean(all_rates,1);
+mean_rates = mean(rates,2);
+outdata = {mean_rates};
+%end
