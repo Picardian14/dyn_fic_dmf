@@ -61,21 +61,19 @@ sampling_freq = 10000
 
 G_max = 16
 G_step = 0.25
-
 G_range = np.arange(8,G_max,G_step)
 LR_range = np.logspace(0, 3,100)
-
 
 # Define the number of cores to use
 NUM_CORES = 24
 NREP = 8
-peak_autocorrelation_grid = np.zeros((len(G_range),len(LR_range)))
-peak_time_grid = np.zeros((len(G_range),len(LR_range)))
-std_slow_grid = np.zeros((len(G_range),len(LR_range)))
-corr_to_sc_grid = np.zeros((len(G_range),len(LR_range)))
-homeostatic_fittness_grid = np.zeros((len(G_range),len(LR_range),params['N']))
-rates_grid = np.zeros((len(G_range),len(LR_range),params['N']))
-fic_t_grid = np.zeros((len(G_range),len(LR_range),params['N']))
+peak_autocorrelation_grid = np.zeros((NREP,len(G_range),len(LR_range)))
+peak_time_grid = np.zeros((NREP,len(G_range),len(LR_range)))
+std_slow_grid = np.zeros((NREP,len(G_range),len(LR_range)))
+corr_to_sc_grid = np.zeros((NREP,len(G_range),len(LR_range)))
+homeostatic_fittness_grid = np.zeros((NREP,len(G_range),len(LR_range),params['N']))
+rates_grid = np.zeros((NREP,len(G_range),len(LR_range),params['N']))
+fic_t_grid = np.zeros((NREP,len(G_range),len(LR_range),params['N']))
 
 params['with_plasticity'] = True
 params['with_decay'] = True
@@ -85,9 +83,9 @@ params['return_fic'] = True
 
 
 def grid_step(args):
-    all_peak_autocorr = np.zeros((NREP,1))
-    all_peak_time = np.zeros((NREP,1))
-    all_corr = np.zeros((NREP,1))
+    all_peak_autocorr = np.zeros((NREP))
+    all_peak_time = np.zeros((NREP))
+    all_corr = np.zeros((NREP))
     all_homfit = np.zeros((NREP, params['N']))
     all_rates = np.zeros((NREP, params['N']))
     all_fic_t = np.zeros((NREP, params['N'] ))
@@ -119,12 +117,12 @@ def grid_step(args):
         all_peak_time[idx] = peak_time
         homeostatic_fittness =  OBJ_RATE - np.mean(rates,axis=1)  
         all_homfit[idx, :] = np.mean(homeostatic_fittness)
-    peak_autocorrelation = np.mean(all_peak_autocorr,axis=0)[0]
-    peak_time = np.mean(all_peak_time,axis=0)[0]
-    corr_to_sc = np.mean(all_corr,axis=0)[0]
-    homeostatic_fittness = np.mean(all_homfit,axis=0)
-    rates = np.mean(all_rates,axis=0)
-    fic_t = np.mean(all_fic_t,axis=0)  
+    peak_autocorrelation = all_peak_autocorr
+    peak_time = all_peak_time
+    corr_to_sc = all_corr
+    homeostatic_fittness = all_homfit
+    rates = all_rates
+    fic_t = all_fic_t  
 
     return idx_G,idx_LR, peak_autocorrelation,peak_time,corr_to_sc,homeostatic_fittness,rates,fic_t
 
@@ -157,12 +155,12 @@ for results in results_list:
     homeostatic_fittness = results[5]
     rates = results[6]
     fic_t = results[7]    
-    peak_autocorrelation_grid[idx_G,idx_LR] = peak_autocorrelation
-    peak_time_grid[idx_G,idx_LR] = peak_time        
-    corr_to_sc_grid[idx_G,idx_LR] = corr_to_sc
-    homeostatic_fittness_grid[idx_G,idx_LR] = homeostatic_fittness
-    rates_grid[idx_G,idx_LR,:] = rates
-    fic_t_grid[idx_G,idx_LR,:] = fic_t
+    peak_autocorrelation_grid[:,idx_G,idx_LR] = peak_autocorrelation
+    peak_time_grid[:,idx_G,idx_LR] = peak_time        
+    corr_to_sc_grid[:,idx_G,idx_LR] = corr_to_sc
+    homeostatic_fittness_grid[:,idx_G,idx_LR] = homeostatic_fittness
+    rates_grid[:,idx_G,idx_LR,:] = rates
+    fic_t_grid[:,idx_G,idx_LR,:] = fic_t
 
 
     import os

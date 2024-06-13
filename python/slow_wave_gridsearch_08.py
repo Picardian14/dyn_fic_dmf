@@ -64,7 +64,6 @@ G_step = 0.25
 G_range = np.arange(1,G_max,G_step)
 LR_range = np.logspace(0, 3,100)
 
-
 # Define the number of cores to use
 NUM_CORES = 24
 NREP = 8

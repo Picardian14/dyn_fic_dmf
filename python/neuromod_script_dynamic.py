@@ -48,9 +48,11 @@ params["flp"] = 0.01
 params["fhp"] = 0.1
 params["wsize"] = 30
 overlap = 29
-nb_steps = 100000
+#nb_steps = 460000
+#T = (nb_steps/params["TR"])*params["dtt"]
+T = 192
 params['TR'] = 2.4
-T = (nb_steps/params["TR"])*params["dtt"]
+nb_steps = int((T*params["TR"])/params["dtt"])
 win_start = np.arange(0, T - burnout - params["wsize"], params["wsize"] - overlap)
 nwins = len(win_start)
 nints = len(isubfcd[0])
@@ -67,21 +69,24 @@ params['N'] = C.shape[0]
 
 
 
+#GAINE_range = np.arange(0,1,0.01)
 GAINE_range = np.arange(0,1,0.01)
+LR_range = np.logspace(0,2.46,10)
 # Define the number of cores to use
 NUM_CORES = 24
 
-mean_fc_grid = np.zeros((len(GAINE_range),params['N'],params['N']))
-sim_fcds_grid = np.zeros((len(GAINE_range),nwins-1,nwins-1))
-mean_fr_grid = np.zeros((len(GAINE_range), params['N']))
-std_fr_grid = np.zeros((len(GAINE_range), params['N']))
+mean_fc_grid = np.zeros((len(LR_range),len(GAINE_range),params['N'],params['N']))
+sim_fcds_grid = np.zeros((len(LR_range),len(GAINE_range),nwins-1,nwins-1))
+mean_fr_grid = np.zeros((len(LR_range),len(GAINE_range), params['N']))
+std_fr_grid = np.zeros((len(LR_range),len(GAINE_range), params['N']))
 
 
 G = 2.21
-LR = 44.3
+#LR = 44.3
 def grid_step(args):
-    GAINE_tuple = args
+    LR_tuple,GAINE_tuple = args
     idx_GAINE,GAINE = GAINE_tuple[0],GAINE_tuple[1]    
+    idx_LR,LR = LR_tuple[0],LR_tuple[1]    
     params['G'] = G
     params['lrj'] = LR
     DECAY = np.exp(a+np.log(LR)*b)
@@ -103,7 +108,7 @@ def grid_step(args):
     mean_firing_rates= np.mean(rates, axis=1)
     std_firing_rates= np.std(rates, axis=1)    
 
-    return idx_GAINE, bold_fc, fcd,mean_firing_rates, std_firing_rates
+    return idx_LR,idx_GAINE, bold_fc, fcd,mean_firing_rates, std_firing_rates
 
 
 from multiprocessing import Pool,Manager
@@ -112,8 +117,9 @@ from multiprocessing import Pool,Manager
 # Define the number of cores to use
 
 # Create a list of argument tuples for the nested loop function
-args_list = [((idx_GAINE,GAINE))             
-             for idx_GAINE,GAINE in enumerate(GAINE_range)]
+args_list = [((idx_LR,LR),(idx_GAINE,GAINE))             
+             for idx_GAINE,GAINE in enumerate(GAINE_range)
+             for idx_LR, LR in enumerate(LR_range)]
 
 manager = Manager()
 results_list = manager.list()
@@ -124,16 +130,17 @@ with Pool(processes=NUM_CORES) as pool:
 
 #return idx_GAINE, mean_fc, sim_fcds,mean_firing_rates, std_firing_rates
 for results in results_list:
-    idx_GAINE = results[0]        
-    mean_fc = results[1]
-    sim_fcds = results[2] 
-    mean_fr = results[3]  
-    std_fr = results[4]
+    idx_LR = results[0]
+    idx_GAINE = results[1]        
+    mean_fc = results[2]
+    sim_fcds = results[3] 
+    mean_fr = results[4]  
+    std_fr = results[5]
     
-    mean_fc_grid[idx_GAINE] = mean_fc
-    sim_fcds_grid[idx_GAINE] = sim_fcds
-    mean_fr_grid[idx_GAINE] = mean_fr
-    std_fr_grid[idx_GAINE] = std_fr
+    mean_fc_grid[idx_LR,idx_GAINE] = mean_fc
+    sim_fcds_grid[idx_LR,idx_GAINE] = sim_fcds
+    mean_fr_grid[idx_LR,idx_GAINE] = mean_fr
+    std_fr_grid[idx_LR,idx_GAINE] = std_fr
 
 
 import os

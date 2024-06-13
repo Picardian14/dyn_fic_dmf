@@ -64,7 +64,7 @@ mean_fc_grid = np.zeros((2,len(SEED_range),params['N'],params['N']))
 sim_fcds_grid = np.zeros((2,len(SEED_range),nwins-1,nwins-1))
 bold_grid = np.zeros((2,len(SEED_range), T-burnout, params['N']))
 
-NUM_CORES=24
+NUM_CORES=16
 
 OBJ_RATE = 3.44    
 # Using heuristic linear rule 
@@ -75,9 +75,9 @@ def grid_step(args):
     SEED_tuple = args
     idx_SEED,SEED = SEED_tuple[0],SEED_tuple[1]    
     params['seed'] = SEED
-
+    print(f"Doing Seed {SEED}")
     params['G'] = 1.74
-    params['alpha'] = 0.76
+    params['alpha'] = 0.67
     params['J'] = params['alpha']*params['G']*params['C'].sum(axis=0).squeeze() + 1    
     params["with_plasticity"] = False
     params["with_decay"] = False    
@@ -91,7 +91,7 @@ def grid_step(args):
     stat_fcd = np.corrcoef(time_fc.T)    
 
     params['G'] = 2.84
-    params['lrj'] = 1.31
+    params['lrj'] = 1.32
     DECAY = np.exp(a+np.log(params['lrj'])*b)
     params['taoj'] = DECAY 
     params['alpha'] = 0.75

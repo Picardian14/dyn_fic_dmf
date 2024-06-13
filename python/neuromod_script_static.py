@@ -48,51 +48,52 @@ params["flp"] = 0.01
 params["fhp"] = 0.1
 params["wsize"] = 30
 overlap = 29
-nb_steps = 100000
+#nb_steps = 460000
+#T = (nb_steps/params["TR"])*params["dtt"]
+T = 192
 params['TR'] = 2.4
-T = (nb_steps/params["TR"])*params["dtt"]
+nb_steps = int((T*params["TR"])/params["dtt"])
 win_start = np.arange(0, T - burnout - params["wsize"], params["wsize"] - overlap)
 nwins = len(win_start)
 nints = len(isubfcd[0])
 b_filter,a_filter = butter(2,np.array([0.01, 0.1])*2*params['TR'], btype='band')
 
 
-# Load coefficients to estimte Decay with LR
+# Load coefficients to estimte Decay with ALPHA
 
-coeffs = loadmat('./data/LinearFitCoefficients.mat')
-a = coeffs['a'][0][0]
-b = coeffs['b'][0][0]
+
 triu_idx = np.triu_indices(C.shape[1],1)
 params['N'] = C.shape[0]
 
 
 
+#GAINE_range = np.arange(0,1,0.01)
 GAINE_range = np.arange(0,1,0.01)
+ALPHA_range = [0.15,0.25,0.35,0.45,0.55,0.65,0.75,0.85,0.95, 1.05]
 # Define the number of cores to use
 NUM_CORES = 24
 
-mean_fc_grid = np.zeros((len(GAINE_range),params['N'],params['N']))
-sim_fcds_grid = np.zeros((len(GAINE_range),nwins-1,nwins-1))
-mean_fr_grid = np.zeros((len(GAINE_range), params['N']))
-std_fr_grid = np.zeros((len(GAINE_range), params['N']))
+mean_fc_grid = np.zeros((len(ALPHA_range),len(GAINE_range),params['N'],params['N']))
+sim_fcds_grid = np.zeros((len(ALPHA_range),len(GAINE_range),nwins-1,nwins-1))
+mean_fr_grid = np.zeros((len(ALPHA_range),len(GAINE_range), params['N']))
+std_fr_grid = np.zeros((len(ALPHA_range),len(GAINE_range), params['N']))
 
 
 G = 2.21
-LR = 44.3
+#ALPHA = 44.3
 def grid_step(args):
-    GAINE_tuple = args
+    ALPHA_tuple,GAINE_tuple = args
     idx_GAINE,GAINE = GAINE_tuple[0],GAINE_tuple[1]    
+    idx_ALPHA,ALPHA = ALPHA_tuple[0],ALPHA_tuple[1]    
     params['G'] = G
-    params['lrj'] = LR
-    DECAY = np.exp(a+np.log(LR)*b)
+    params['alpha'] = ALPHA    
     OBJ_RATE = 3.44    
     params['wgaine'] = GAINE
     params['wgaini'] = GAINE
     # Using heuristic linear rule 
-    params['taoj'] = DECAY 
     params['obj_rate'] = OBJ_RATE
     #params['taoj'] = 210000
-    params['J'] = 0.75*params['G']*params['C'].sum(axis=0).squeeze() + 1    
+    params['J'] = params['alpha']*params['G']*params['C'].sum(axis=0).squeeze() + 1    
     rates, rates_inh, bold, fic_t = dmf.run(params, nb_steps)     
     bold = bold[:, burnout:]
     filt_bold = filter_bold(bold.T, params['flp'],params['fhp'], params['TR'])
@@ -103,7 +104,7 @@ def grid_step(args):
     mean_firing_rates= np.mean(rates, axis=1)
     std_firing_rates= np.std(rates, axis=1)    
 
-    return idx_GAINE, bold_fc, fcd,mean_firing_rates, std_firing_rates
+    return idx_ALPHA,idx_GAINE, bold_fc, fcd,mean_firing_rates, std_firing_rates
 
 
 from multiprocessing import Pool,Manager
@@ -112,7 +113,8 @@ from multiprocessing import Pool,Manager
 # Define the number of cores to use
 
 # Create a list of argument tuples for the nested loop function
-args_list = [((idx_GAINE,GAINE))             
+args_list = [((idx_ALPHA,ALPHA),(idx_GAINE,GAINE))        
+             for idx_ALPHA, ALPHA in enumerate(ALPHA_range)     
              for idx_GAINE,GAINE in enumerate(GAINE_range)]
 
 manager = Manager()
@@ -124,16 +126,17 @@ with Pool(processes=NUM_CORES) as pool:
 
 #return idx_GAINE, mean_fc, sim_fcds,mean_firing_rates, std_firing_rates
 for results in results_list:
-    idx_GAINE = results[0]        
-    mean_fc = results[1]
-    sim_fcds = results[2] 
-    mean_fr = results[3]  
-    std_fr = results[4]
+    idx_ALPHA = results[0]
+    idx_GAINE = results[1]        
+    mean_fc = results[2]
+    sim_fcds = results[3] 
+    mean_fr = results[4]  
+    std_fr = results[5]
     
-    mean_fc_grid[idx_GAINE] = mean_fc
-    sim_fcds_grid[idx_GAINE] = sim_fcds
-    mean_fr_grid[idx_GAINE] = mean_fr
-    std_fr_grid[idx_GAINE] = std_fr
+    mean_fc_grid[idx_ALPHA,idx_GAINE] = mean_fc
+    sim_fcds_grid[idx_ALPHA,idx_GAINE] = sim_fcds
+    mean_fr_grid[idx_ALPHA,idx_GAINE] = mean_fr
+    std_fr_grid[idx_ALPHA,idx_GAINE] = std_fr
 
 
 import os
