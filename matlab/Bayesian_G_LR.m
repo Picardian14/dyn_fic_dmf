@@ -55,10 +55,7 @@ for idx_LR=1:length(LR_range)
         thispars.lrj = LR_range(idx_LR);
         thispars.taoj = fitResult.a*thispars.lrj^fitResult.b
         [rates, rates_inh] = dyn_fic_DMF(thispars, thispars.nb_steps,'rate');
-        freqs = linspace(0.1,50,1000);
-        [pxx,freqs1]= pwelch(rates', [],[],freqs,1000);
-        all_PSD(idx_LR, idx_G, :,:) = pxx;
-        all_freqs(idx_LR, idx_G, :) = freqs1;
+        
     end
 end
 

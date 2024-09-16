@@ -10,12 +10,13 @@ C = 0.2.*sc90./max(sc90(:));
 params = dyn_fic_DefaultParams('C',C);
 stren = sum(params.C);
 % FITTING PARAMS
-params.fit_fc = false;
-params.fit_fcd = true;
+params.fit_fc = true;
+params.fit_fcd = false;
+
 
 % TYPE OF FIC CALC
-params.with_plasticity=true;
-params.with_decay=true;
+params.with_plasticity=false;
+params.with_decay=false;
 
 % OUTPUT model parameters
 params.return_rate=true;
@@ -93,11 +94,11 @@ coeffs = load("data/LinearFitCoefficients.mat");
 a = coeffs.a;
 b = coeffs.b;
 %%
-params.G = 4.21; % 2.9 for minObjective
+params.G = 1.60; % 2.9 for minObjective
 
-params.alpha = 0.75; % 0.76
+params.alpha = 0.72; % 0.76
 
-params.lrj = 44.37;                          
+params.lrj = 4.58;                          
 params.taoj = exp(a+log(params.lrj)*b);
 % save a safe copy to send to dyn_fic function
 if params.with_plasticity
@@ -125,6 +126,7 @@ filt_bold = filter_bold(bold',params.flp,params.fhi,params.TR);
 isubfc = find(tril(ones(params.N),-1));
 if params.fit_fc
     sim_fc = corrcoef(filt_bold);
+    disp("calculo FC FC")
     %all_sim_fc(idx, :, :) = sim_fc;
 elseif params.fit_fcd      
     disp("calculo fcd")
@@ -144,7 +146,7 @@ end
 if params.fit_fc
     %mean_fc = mean(all_sim_fc, 1);
     % SOLO ESTOY COMPARANDO CON 1 FC
-    disp("Error corr")
+    disp(" corr")
     out_error = 1-corr2(sim_fc(isubfc),emp_fc(isubfc));
 elseif params.fit_fcd             
     % SOLO ESTOY COMPARANDO CON 1 FC      

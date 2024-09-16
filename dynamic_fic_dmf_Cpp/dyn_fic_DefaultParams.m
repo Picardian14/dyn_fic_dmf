@@ -21,8 +21,7 @@ else
   try
     p = strrep(mfilename('fullpath'), 'dyn_fic_DefaultParams', '');
     C = dlmread([p, '../data/DTI_fiber_consensus_HCP.csv'], ',');
-%     C = C/max(C(:));
-    C = C/max(C(:)).*0.2; % Deco's offset
+    C = C/max(C(:));  
   catch
     error('No connectivity matrix provided, and default matrix not found.');
   end
@@ -52,16 +51,22 @@ params.ci        = 615.;    % inhibitory non linear shape parameter
 params.wgaine    = 0;       % neuromodulatory gain
 params.wgaini    = 0;       % neuromodulatory gain
 params.G         = 2;       % Global Coupling Parameter
-params.lrj       = 0.05;       % FIC Learning rate
+
+% Dynamic Fic Parameters
+params.lrj       = 1;       % FIC Learning rate
 params.taoj      = 50000;       % FIC decay constant
 params.obj_rate  = 3.44;       % FIC objective firing rate
+params.return_rate=true;
+params.return_bold=true;
+params.return_fic=false;
+params.with_plasticity=true;
+params.with_decay=true;
 
 % Balloon-Windkessel parameters (from firing rates to BOLD signal)
 params.TR  = 2;     % number of seconds to sample bold signal
 params.dtt = 0.001; % BW integration step, in seconds
 
 % Parallel computation parameters
-% params.batch_size = 5000;
 params.batch_size = 5000;
 
 % Add/replace remaining parameters
@@ -71,9 +76,7 @@ end
 
 % If feedback inhibitory control not provided, use heuristic
 if ~any(strcmp(varargin, 'J'))
-    params.J = 1.5*params.G*sum(params.C, 1)./2' + 1;
-%   params.J = 1.5*params.G*sum(params.C, 1)' + 1;
-%   params.J = 0.75.*params.G.*sum(params.C, 1)' + 1;
+  params.J = 0.75*params.G.*sum(params.C, 1)' + 1;
 end
 
 end

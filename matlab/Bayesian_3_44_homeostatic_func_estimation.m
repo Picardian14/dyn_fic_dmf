@@ -41,7 +41,6 @@ params.nb_steps = 100000;
 params.burnout = 5;
 LR_range = [0.1,1000];
 DECAY_range = [100,100000];
-% G and OBJ_RATE may change
 G_span = 0:0.5:8;
 
 

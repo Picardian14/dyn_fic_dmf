@@ -84,9 +84,7 @@ def default_params(**kwargs):
     params['wgaine']    = 0        # neuromodulatory gain
     params['wgaini']    = 0        # neuromodulatory gain
     params['G']         = 2        # Global Coupling Parameter
-    params['lrj']       = 0.05
-    params['taoj']       = 50000
-    params['obj_rate']       = 3.44
+    
     # Balloon-Windkessel parameters (from firing rates to BOLD signal)
     params['TR']  = 2     # number of seconds to sample bold signal
     params['dtt'] = 0.001 # BW integration step, in seconds
@@ -94,9 +92,12 @@ def default_params(**kwargs):
     # Parallel computation parameters
     params['batch_size'] = 5000
 
-    # Calculation options
-    params["return_bold"] = False
-    params["return_rate"] = True
+    # Dynamic Fic options options
+    params['lrj']       = 1
+    params['taoj']       = 50000
+    params['obj_rate']       = 3.44
+    params["return_bold"] = True
+    params["return_rate"] = False
     params["return_fic"] = False
     params["with_decay"] = True
     params["with_plasticity"] = True

@@ -12,7 +12,7 @@ function [results] = dynamic_fitting(G, lr,dmf_pars,opts, observable)
     % if 2x1, optimized within bounds, otherwise dont optimize, use fix value provided in dmf_pars
     % fitting variables could include G and OBJ_RATE in the future
     opt_vars = [];
-    stren = sum(dmf_pars.C)./2;
+    stren = sum(dmf_pars.C);
     if length(G(:))==2 
         Gvals = optimizableVariable('G',[G(1) G(2)]);
         opt_vars = [Gvals];
@@ -34,17 +34,17 @@ function [results] = dynamic_fitting(G, lr,dmf_pars,opts, observable)
         thispars.taoj = exp(a+log(thispars.lrj)*b);
         % save a safe copy to send to dyn_fic function
         thispars.J = 0.75*thispars.G*stren' + 1; % updates it
-        seed_range = thispars.NSUB*thispars.seed:thispars.NSUB*(thispars.seed+1);
+        %seed_range = thispars.NSUB*thispars.seed:thispars.NSUB*(thispars.seed+1);
         all_sim_fc = zeros(thispars.NSUB,thispars.N, thispars.N);
         all_sim_fcd = zeros(thispars.NSUB, thispars.nwins,thispars.nwins);
         all_rates = zeros(thispars.NSUB,thispars.N);
         isubfc = find(tril(ones(thispars.N),-1));
-        for idx=1:length(seed_range)
-            thispars.seed = seed_range(idx);
+        %for idx=1:length(seed_range)
+            %thispars.seed = seed_range(idx);            
             [rates, rates_inh, bold, fic_t] = dyn_fic_DMF(thispars, thispars.nb_steps);
             % takeout transient simulation
             rates = rates(:, (thispars.burnout*thispars.TR/thispars.dtt):end);
-            all_rates(idx, :) = mean(rates, 2);
+            %all_rates(idx, :) = mean(rates, 2);
             bold = bold(:,thispars.burnout:end); % remove initial transient
             bold(isnan(bold))=0;
             bold(isinf(bold(:)))=max(bold(~isinf(bold(:))));
@@ -60,31 +60,46 @@ function [results] = dynamic_fitting(G, lr,dmf_pars,opts, observable)
 
             if thispars.fit_fc
                 sim_fc = corrcoef(filt_bold);
-                all_sim_fc(idx, :, :) = sim_fc;
+                %all_sim_fc(idx, :, :) = sim_fc;
             elseif thispars.fit_fcd                
-                sim_fcd = compute_fcd(filt_bold',thispars.wsize,thispars.overlap,isubfc);
+                sim_fcd = compute_fcd(filt_bold,thispars.wsize,thispars.overlap,isubfc);
                 sim_fcd(isnan(sim_fcd))=0;
                 sim_fcd = corrcoef(sim_fcd);
+                if (size(observable, 2)~=size(sim_fcd,2))
+                     error("not same size FCD")
+                end
                 if isempty(sim_fcd)                    
                     sim_fcd = zeros(size(sim_fcd));
                     return
                 end
-                all_sim_fcd(idx, :, :) = sim_fcd;
+                %all_sim_fcd(idx, :, :) = sim_fcd;
             else
                 disp('error: target observable not set')
                 out_error=nan; 
             end
-        end
+        %end
         if thispars.fit_fc
-            mean_fc = mean(all_sim_fc, 1);
-            out_error = 1-corr2(mean_fc(isubfc),observable(isubfc));
-        elseif thispars.fit_fcd                                
-            [~,~,out_error] = kstest2(all_sim_fcd(:),observable(:));
+            %mean_fc = mean(all_sim_fc, 1);
+            % SOLO ESTOY COMPARANDO CON 1 FC
+            out_error = 1-corr2(sim_fc(isubfc),observable(isubfc));
+        elseif thispars.fit_fcd             
+            % SOLO ESTOY COMPARANDO CON 1 FC      
+            try
+                [~,~,out_error] = kstest2(sim_fcd(:),observable(:));
+            catch 
+                disp("G: "+ thispars.G);
+                disp("LR: "+ thispars.lrj);
+                if isempty(sim_fcd)                    
+                    disp("FCD Was empty ");
+                end
+                out_error=1;
+            end
         else
             disp('error: target observable not set')
             out_error=nan;      
         end
-        mean_rates = mean(all_rates,1);
+        %mean_rates = mean(all_rates,1);
+        mean_rates = mean(rates,2);
         outdata = {mean_rates};
     end
     end
