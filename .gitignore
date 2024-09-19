@@ -3,6 +3,8 @@ matlab/Results/
 python/Results/
 python/outputs/
 python/data/
+clusterScripts/outputs/
+
 Figures/
 *.mexa64
 dist/
