@@ -5,7 +5,7 @@
 #SBATCH --mem=32G
 #SBATCH --output=outputs/slow_wave_816%A_%a.out
 #SBATCH --error=outputs/slow_wave_816%A_%a.err
-
+#SBATCH --chdir=/network/lustre/iss02/home/ivan.mindlin/
 # Load Singularity module
 module load singularity
 

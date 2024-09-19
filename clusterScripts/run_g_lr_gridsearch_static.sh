@@ -5,7 +5,7 @@
 #SBATCH --mem=32G
 #SBATCH --output=outputs/g_lr_stat_%A_%a.out
 #SBATCH --error=outputs/g_lr_stat%A_%a.err
-
+#SBATCH --chdir=/network/lustre/iss02/home/ivan.mindlin/
 # Load Singularity module
 module load singularity
 

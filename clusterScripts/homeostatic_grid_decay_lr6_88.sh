@@ -5,7 +5,7 @@
 #SBATCH --mem=32G
 #SBATCH --output=outputs/homeostatic688_%A_%a.out
 #SBATCH --error=outputs/homeostatic688%A_%a.err
-
+#SBATCH --chdir=/network/lustre/iss02/home/ivan.mindlin/
 # Load Singularity module
 module load singularity
 

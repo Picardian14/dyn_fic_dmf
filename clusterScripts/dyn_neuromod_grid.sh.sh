@@ -5,7 +5,7 @@
 #SBATCH --mem=32G
 #SBATCH --output=outputs/dyn_neuromod_%A_%a.out
 #SBATCH --error=outputs/dyn_neuromod%A_%a.err
-
+#SBATCH --chdir=/network/lustre/iss02/home/ivan.mindlin/
 # Load Singularity module
 module load singularity
 
