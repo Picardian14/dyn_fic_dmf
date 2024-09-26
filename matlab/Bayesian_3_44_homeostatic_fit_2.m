@@ -15,9 +15,10 @@ matlab -nodisplay<<-EOF
 
 clear all;
 close all;
+addpath ../dynamic_fic_dmf_Cpp Results/ functions/ outputs/ data/
 mex ../dynamic_fic_dmf_Cpp/dyn_fic_DMF.cpp
-load SC_and_5ht2a_receptors.mat
-C = 0.2.*sc90./max(sc90(:));
+load data/DTI_fiber_consensus_HCP.mat
+C = 0.2.*connectivity./max(connectivity(:));
 stren = sum(C)./2;
 params = dyn_fic_DefaultParams('C',C);
 N=length(params.C);
@@ -25,7 +26,7 @@ N=length(params.C);
 %disp("Amoount of available processes: "+maxNumCompThreads);
 %parpool('local', maxNumCompThreads);
 
-bo_opts = {'IsObjectiveDeterministic',true,'UseParallel',true,... %% Will be determinsitic so we do not estimate error
+bo_opts = {'IsObjectiveDeterministic',false,'UseParallel',true,... %% Will be determinsitic so we do not estimate error
         'MinWorkerUtilization',4,...
         'AcquisitionFunctionName','expected-improvement-plus',...
         'MaxObjectiveEvaluations',1e16,...
@@ -44,8 +45,8 @@ G_span = 8:0.5:16;
 
 
 params.obj_rate = 3.44;
-for seed=11:20
-folder_name = sprintf('Results/High_G_Range/%d', seed); % Create folder name based on seed number
+for seed=1:100
+folder_name = sprintf('Results/High_G_Range/'); % Create folder name based on seed number
     if ~exist(folder_name, 'dir')
         mkdir(folder_name); % Create folder if it doesn't exist
         fprintf('Folder "%s" created.\n', folder_name);
@@ -53,11 +54,10 @@ folder_name = sprintf('Results/High_G_Range/%d', seed); % Create folder name bas
         fprintf('Folder "%s" already exists.\n', folder_name);
     end
     params.seed=seed;
-    for it=1:20
-        results = findHomeostasis(DECAY_range,LR_range,G_span,params,bo_opts);
-        close all;
-        filename = sprintf('Results/High_G_Range/%d/iter_%d.mat',seed, it); % Create filename
-        save(filename, 'results'); % Save results in a .mat file
-    end
+    results = findHomeostasis(DECAY_range,LR_range,G_span,params,bo_opts);
+    close all;
+    filename = sprintf('Results/High_G_Range/seed_%d.mat',seed); % Create filename
+    save(filename, 'results'); % Save results in a .mat file
+    
 end
 EOF
