@@ -54,9 +54,9 @@ win_start = np.arange(0, T - burnout - params["wsize"], params["wsize"] - overla
 nwins = len(win_start)
 nints = len(isubfcd[0])
 
-coeffs = loadmat('./data/LinearFitCoefficients.mat')
-a = coeffs['a'][0][0]
-b = coeffs['b'][0][0]
+fit_res = np.load("./data/fit_res_3-44.npy")
+b = fit_res[0] # First element is the slope
+a = fit_res[1]
 
 SEED_range = list(range(1,101))
 

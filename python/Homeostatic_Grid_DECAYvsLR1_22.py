@@ -4,7 +4,7 @@ from scipy.io import loadmat
 import os
 from multiprocessing import Pool, Manager
 
-C = loadmat('./data/Schaefer232_HCP_DTI_count.mat')['connectivity'][:200, :200]
+C = loadmat('./data/DTI_fiber_consensus_HCP.mat')['connectivity'][:200, :200]
 C = 0.2 * C / np.max(C)
 params = dmf.default_params(C=C)
 

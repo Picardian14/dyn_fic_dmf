@@ -48,9 +48,9 @@ def get_peak_and_ms(rates):
 nb_steps = 50000
 C = loadmat('./data/SC_and_5ht2a_receptors.mat')['sc90']
 # Load coefficients to estimte Decay with LR
-coeffs = loadmat('./data/LinearFitCoefficients.mat')
-a = coeffs['a'][0][0]
-b = coeffs['b'][0][0]
+fit_res = np.load("./data/fit_res_3-44.npy")
+b = fit_res[0] # First element is the slope
+a = fit_res[1]
 C = 0.2*C/np.max(C)
 triu_idx = np.triu_indices(C.shape[1],1)
 brunout = 8

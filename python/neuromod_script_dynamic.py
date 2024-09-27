@@ -27,10 +27,10 @@ def compute_fcd(data, wsize, overlap, isubdiag):
     return fcd
 
 
-C = loadmat('data/SC_and_5ht2a_receptors.mat')['sc90']
+C = loadmat('./data/DTI_fiber_consensus_HCP.mat')['connectivity'][:200, :200]
 C = 0.2*C/np.max(C)
 params = dmf.default_params(C=C)
-RECEPTORS = loadmat('data/SC_and_5ht2a_receptors.mat')['receptors']
+RECEPTORS = np.load("./data/Schaeffer200-Tian/5HT2a_cimbi_hc29_beliveau_schaeffer200.npy")[:200]
 RECEPTORS = RECEPTORS/max(RECEPTORS)-min(RECEPTORS)
 RECEPTORS = RECEPTORS - max(RECEPTORS) + 1
 params["receptors"] = RECEPTORS
@@ -61,9 +61,9 @@ b_filter,a_filter = butter(2,np.array([0.01, 0.1])*2*params['TR'], btype='band')
 
 # Load coefficients to estimte Decay with LR
 
-coeffs = loadmat('./data/LinearFitCoefficients.mat')
-a = coeffs['a'][0][0]
-b = coeffs['b'][0][0]
+fit_res = np.load("./data/fit_res_3-44.npy")
+b = fit_res[0] # First element is the slope
+a = fit_res[1]
 triu_idx = np.triu_indices(C.shape[1],1)
 params['N'] = C.shape[0]
 

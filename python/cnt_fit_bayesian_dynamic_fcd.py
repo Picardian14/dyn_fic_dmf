@@ -77,9 +77,9 @@ for i in range(NSUB):
     emp_fcds[i] = fcd
     emp_fcs[i] = bold_fc
 
-coeffs = loadmat('./data/LinearFitCoefficients.mat')
-a = coeffs['a'][0][0]
-b = coeffs['b'][0][0]
+fit_res = np.load("./data/fit_res_3-44.npy")
+b = fit_res[0] # First element is the slope
+a = fit_res[1]
 params['N'] = C.shape[0]
 params['TR'] = 2.4
 nb_steps = int((data.shape[-1]-burnout)*params['TR']/params['dtt'])

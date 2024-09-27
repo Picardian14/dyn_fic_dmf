@@ -69,9 +69,9 @@ for i in range(NSUB):
 
 # Load coefficients to estimte Decay with ALPHA
 
-coeffs = loadmat('./data/LinearFitCoefficients.mat')
-a = coeffs['a'][0][0]
-b = coeffs['b'][0][0]
+fit_res = np.load("./data/fit_res_3-44.npy")
+b = fit_res[0] # First element is the slope
+a = fit_res[1]
 triu_idx = np.triu_indices(C.shape[1],1)
 params['N'] = C.shape[0]
 

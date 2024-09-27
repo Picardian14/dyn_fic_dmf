@@ -27,10 +27,10 @@ def compute_fcd(data, wsize, overlap, isubdiag):
     return fcd
 
 
-C = loadmat('data/SC_and_5ht2a_receptors.mat')['sc90']
+C = loadmat('./data/DTI_fiber_consensus_HCP.mat')['connectivity'][:200, :200]
 C = 0.2*C/np.max(C)
 params = dmf.default_params(C=C)
-RECEPTORS = loadmat('data/SC_and_5ht2a_receptors.mat')['receptors']
+RECEPTORS = np.load("./data/Schaeffer200-Tian/5HT2a_cimbi_hc29_beliveau_schaeffer200.npy")[:200]
 RECEPTORS = RECEPTORS/max(RECEPTORS)-min(RECEPTORS)
 RECEPTORS = RECEPTORS - max(RECEPTORS) + 1
 params["receptors"] = RECEPTORS
