@@ -46,9 +46,9 @@ params["flp"] = 0.01
 params["fhp"] = 0.1
 params["wsize"] = 30
 overlap = 29
-params['TR'] = 2.4
+params['TR'] = 2
 
-T = 192
+T = 250
 nb_steps = int(T*params['TR']/params['dtt'])
 win_start = np.arange(0, T - burnout - params["wsize"], params["wsize"] - overlap)
 nwins = len(win_start)

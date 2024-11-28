@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --time=24:00:00
-#SBATCH --job-name=BigGRangeShortAlpha_stat_fc
+#SBATCH --time=48:00:00
+#SBATCH --job-name=HCP_Awake_sameranges_stat_fc
 #SBATCH --mail-type=END
 #SBATCH --mail-user=
 #SBATCH --mem=32G
 #SBATCH --cpus-per-task=12
-#SBATCH --output=outputs/BigGRangeShortAlpha_stat_fc.out
-#SBATCH --error=outputs/BigGRangeShortAlpha_stat_fc.err
+#SBATCH --output=outputs/HCP_Awake_sameranges_stat_fc.out
+#SBATCH --error=outputs/HCP_Awake_sameranges_stat_fc.err
 
 ml MATLAB/R2022b
 matlab -nodisplay<<-EOF
@@ -14,11 +14,17 @@ matlab -nodisplay<<-EOF
 clear all;
 close all;
 addpath ../dynamic_fic_dmf_Cpp Results/ functions/ outputs/ data/
-sub_experiment_name = "BigGRangeShortAlpha";
+
+folder_name = 'Results/stat_fc';
+if ~exist(folder_name, 'dir')
+    mkdir(folder_name);
+end
+
+sub_experiment_name = "HCP_Awake_sameranges";
 %mex ../dynamic_fic_dmf_Cpp/dyn_fic_DMF.cpp
 % Load Data
-load data/SC_and_5ht2a_receptors.mat
-C = 0.2.*sc90./max(sc90(:));
+load data/DTI_fiber_consensus_HCP.mat
+C = 0.2.*connectivity(1:200,1:200)./max(connectivity(1:200,1:200));
 stren = sum(C);
 params = dyn_fic_DefaultParams('C',C);
 % fitting options
@@ -36,24 +42,24 @@ params.return_bold=true;
 params.obj_rate = 3.44;
 
 % basic model parameters
-params.TR = 2.4;
+params.TR = 2;
 params.flp = 0.008; 
 params.fhi = 0.08; 
 params.wsize = 30; 
 params.overlap = 28; 
 params.N=length(params.C);
 %params.seed = sub_experiment_name;
-load('./data/ts_coma24_AAL_symm_withSC.mat');
+load('./data/BOLD_timeseries_Awake.mat')
 % Save in data the timeseries
-params.NSUB=13;
+params.NSUB=length(BOLD_timeseries_Awake);
 indexsub=1:params.NSUB;
 for nsub=indexsub
-    data(:, :, nsub)=timeseries_CNT24_symm{indexsub};
+    data(:, :, nsub)=BOLD_timeseries_Awake{nsub}(1:200,:);
 end
 Isubdiag = find(tril(ones(params.N),-1));
 params.burnout = 10;
 params.T = size(data,2);
-params.TMAX = 192 - params.burnout;
+params.TMAX = params.T - params.burnout;
 
 indexsub=1:params.NSUB;
 for nsub=indexsub
@@ -83,8 +89,8 @@ bo_opts = {'IsObjectiveDeterministic',false,'UseParallel',true,... %% Will be de
 params.win_start = 0:params.wsize-params.overlap:params.TMAX-params.wsize-1;
 params.nwins = length(params.win_start);
 params.nb_steps = fix((params.T)*params.TR)/params.dtt; % Generate the same amount of time points ant then remove the transient period
-ALPHA_range = [0.65 0.85];
-G_range = [0 2.5];
+ALPHA_range = [0.01 0.99];
+G_range = [0.1 16];
 params.ALPHA_range = ALPHA_range;
 params.G_range = G_range;
 % training
@@ -93,7 +99,7 @@ params.G_range = G_range;
 results = static_fitting(G_range,ALPHA_range,params,bo_opts, emp_fc);
 close all;
 % save results
-filename = sprintf('Results/stat_fc/%s.mat',sub_experiment_name); % Create filename
+filename = sprintf('%s/%s.mat', folder_name, sub_experiment_name); % Create filename
 save(filename, 'results'); % Save results in a .mat file
 
 EOF

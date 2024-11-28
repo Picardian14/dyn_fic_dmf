@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=slow_wave_816
 #SBATCH --cpus-per-task=24
-#SBATCH --time=24:00:00
+#SBATCH --time=48:00:00
 #SBATCH --mem=32G
-#SBATCH --output=outputs/slow_wave_816%A_%a.out
-#SBATCH --error=outputs/slow_wave_816%A_%a.err
+#SBATCH --output=outputs/slow_wave_816_%A_%a.out
+#SBATCH --error=outputs/slow_wave_816_%A_%a.err
 #SBATCH --chdir=/network/lustre/iss02/home/ivan.mindlin/
 # Load Singularity module
 module load singularity

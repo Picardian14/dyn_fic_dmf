@@ -2,7 +2,7 @@
 #SBATCH --job-name=homeostatic_grid
 #SBATCH --cpus-per-task=24
 #SBATCH --time=72:00:00
-#SBATCH --mem=64G
+#SBATCH --mem=32G
 #SBATCH --output=outputs/homeostatic_%A_%a.out
 #SBATCH --error=outputs/homeostatic%A_%a.err
 #SBATCH --chdir=/network/lustre/iss02/home/ivan.mindlin/

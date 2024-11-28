@@ -43,12 +43,12 @@ params["with_plasticity"] = False
 params["with_decay"] = False
 
 isubfcd = np.triu_indices(C.shape[1],1)
-burnout = 5
+burnout = 7
 flp = 0.01
 fhp = 0.1
 wsize = 30
 overlap = 29
-T = 192
+T = 250
 win_start = np.arange(0, T - wsize, wsize - overlap)
 nwins = len(win_start)
 nints = len(isubfcd[0])
@@ -80,7 +80,7 @@ ALPHA_range = [0.6,0.65,0.7,0.75,0.8,0.]#np.arange(1,51,2)
 
 
 
-params['TR'] = 2.4
+params['TR'] = 2
 
 
 nb_steps = int((data.shape[-1]-2*burnout)*params['TR']/params['dtt'])
@@ -95,7 +95,7 @@ fit_fcd_grid = np.zeros((len(G_range),len(ALPHA_range)))
 fc_grid = np.zeros((len(G_range),len(ALPHA_range), params['N'],params['N']))
 fcd_grid = np.zeros((len(G_range),len(ALPHA_range), len(isubfcd[0]),len(isubfcd[0])))
 
-burnout = 5
+burnout = 7
 
 
 

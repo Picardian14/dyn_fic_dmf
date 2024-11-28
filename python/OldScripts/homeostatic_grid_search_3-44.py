@@ -34,12 +34,12 @@ C = loadmat('../SC_and_5ht2a_receptors.mat')['sc90']
 C = 0.2*C/np.max(C)
 params = dmf.default_params(C=C)
 isubfcd = np.triu_indices(C.shape[1],1)
-burnout = 5
+burnout = 7
 flp = 0.01
 fhp = 0.1
 wsize = 30
 overlap = 29
-T = 192
+T = 250
 win_start = np.arange(0, T - wsize, wsize - overlap)
 nwins = len(win_start)
 nints = len(isubfcd[0])
@@ -70,7 +70,7 @@ G_range = [1.7,1.8,1.9,2,2.1,2.2,2.3,2.4,2.5,2.6,2.7]
 LR_range = np.arange(1,51,2)
 
 
-params['TR'] = 2.4
+params['TR'] = 2
 
 
 nb_steps = int((data.shape[-1]-2*burnout)*params['TR']/params['dtt'])
@@ -86,7 +86,7 @@ fit_fcd_grid = np.zeros((len(G_range),len(LR_range)))
 fc_grid = np.zeros((len(G_range),len(LR_range), params['N'],params['N']))
 fcd_grid = np.zeros((len(G_range),len(LR_range), len(isubfcd[0]),len(isubfcd[0])))
 
-burnout = 5
+burnout = 7
 
 
 

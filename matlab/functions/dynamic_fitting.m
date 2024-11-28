@@ -6,9 +6,9 @@ function [results] = dynamic_fitting(G, lr,dmf_pars,opts, observable)
         error("Error: Parameters not set to dynamic");                
     end
 
-    coeffs = load("data/LinearFitCoefficients.mat");
-    a = coeffs.a;
-    b = coeffs.b;
+    data = load("data/fit_res_3-44.mat");
+    a = data.fit_res(2);
+    b = data.fit_res(1);
     % if 2x1, optimized within bounds, otherwise dont optimize, use fix value provided in dmf_pars
     % fitting variables could include G and OBJ_RATE in the future
     opt_vars = [];

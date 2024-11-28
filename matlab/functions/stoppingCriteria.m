@@ -5,7 +5,7 @@ switch state
     case 'initial'
         h = figure;
     case 'iteration'
-        if results.MinObjective < 0.2
+        if results.MinObjective < 0.01
             stop = true;
         end
         figure(h)

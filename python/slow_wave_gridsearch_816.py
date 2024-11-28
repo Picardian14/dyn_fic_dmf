@@ -46,14 +46,14 @@ def get_peak_and_ms(rates):
 
 
 nb_steps = 50000
-C = loadmat('./data/SC_and_5ht2a_receptors.mat')['sc90']
+C = loadmat('./data/DTI_fiber_consensus_HCP.mat')['connectivity'][:200, :200]
 # Load coefficients to estimte Decay with LR
 fit_res = np.load("./data/fit_res_3-44.npy")
 b = fit_res[0] # First element is the slope
 a = fit_res[1]
 C = 0.2*C/np.max(C)
 triu_idx = np.triu_indices(C.shape[1],1)
-brunout = 8
+burnout = 7
 params = dmf.default_params(C=C)
 params['N'] = C.shape[0]
 sampling_freq = 10000
@@ -105,8 +105,8 @@ def grid_step(args):
     params['J'] = 0.75*params['G']*params['C'].sum(axis=0).squeeze() + 1
     for idx in range(NREP):
         rates, _, _, fic_t = dmf.run(params, nb_steps)        
-        rates = rates[:, np.ceil(brunout * 1000).astype(int):]    
-        fic_t = fic_t[:, np.ceil(brunout * 1000).astype(int):]    
+        rates = rates[:, np.ceil(burnout * 1000).astype(int):]    
+        fic_t = fic_t[:, np.ceil(burnout * 1000).astype(int):]    
         rates_fc = np.corrcoef(rates)
         all_rates[idx,:] = np.mean(rates, axis=1)
         all_fic_t[idx,:] = np.mean(fic_t, axis=1)
@@ -177,7 +177,9 @@ arrays_to_save = {
 }
 
 results_folder = "./Results/slow_waves816"
-
+if not os.path.exists(results_folder):
+    os.makedirs(results_folder)
+    
 # Save
 for array_name, array_data in arrays_to_save.items():
     file_name = os.path.join(results_folder, f"{array_name}.npy")

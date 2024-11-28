@@ -6,7 +6,7 @@ C = 0.2 * C / max(C(:));
 % Set parameters
 params = dyn_fic_DefaultParams('C', C);
 %params.seed = 1;
-params.TR = 2.4;
+params.TR = 2;
 params.G = 2.11;
 params.J = 0.75 * params.G * sum(params.C, 1).' + 1;
 params.flp = 0.01;
@@ -17,7 +17,7 @@ params.with_decay = true;
 params.return_bold = true;
 params.return_rate = false;
 params.return_fic = true;
-burnout = 8;
+burnout = 7;
 all_sim_fc = zeros(12,90,90);
 parfor idx=1:12    
     [rates, rates_inh, BOLD, fic_t] = dyn_fic_DMF(params, nb_steps);

@@ -38,7 +38,7 @@ bo_opts = {'IsObjectiveDeterministic',true,'UseParallel',true,... %% Will be det
 
 % Setting model parameters
 params.nb_steps = 100000;
-params.burnout = 5;
+params.burnout = 7;
 LR_range = [0.1,1000];
 DECAY_range = [100,100000];
 G_span = 0:0.5:8;

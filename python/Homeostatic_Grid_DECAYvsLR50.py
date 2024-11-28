@@ -20,7 +20,7 @@ LR_range = np.logspace(0, 3, 100)
 DECAY_range = np.logspace(2, 6, 110)
 
 
-burnout = 5
+burnout = 7
 nb_steps = 50000
 
 # Define the number of cores to use
