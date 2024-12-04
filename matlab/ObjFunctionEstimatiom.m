@@ -5,8 +5,8 @@ bo = load('./Results/dyn_fcd/HCP_Awake_sameranges.mat');
 boAwake = bo.results;
 XatminAwake = boAwake.XAtMinObjective;
 XatminEstimatedAwake = boAwake.XAtMinEstimatedObjective;
-num_points_y = 90;
-num_points_x = 100;
+num_points_y = 100;
+num_points_x = 60;
 G_space = linspace(0.1,16, num_points_x);
 lr_space = logspace(0, 3, num_points_y);
 
@@ -91,18 +91,18 @@ save("Results/dyn_fcd/results_deep_dyn_fcd.mat", "lr_dyn_fcd","G_dyn_fcd","funcE
 
 sgtitle("Dynamic FCD fit"); % Add a title for the whole figure
 % Save figure
-savefig('plots/Awake-vs-Deep-FCD_Dynamic.fig');
-saveas(gcf, 'plots/Awake-vs-Deep-FCD_Dynamic.png')
+%savefig('plots/Awake-vs-Deep-FCD_Dynamic.fig');
+%saveas(gcf, 'plots/Awake-vs-Deep-FCD_Dynamic.png')
 
 
 
 
 %% DYNAMIC FC
 figure;
-bo = load('./Results/dyn_fc/HCP_Awake_sameranges.mat'); % Replace 'your_saved_bo_object.mat' with the actual filename
+bo = load('./Results/dyn_fc/HCP_Awake_sameranges.mat'); % Replace '%your_saved_bo_object.mat' with the actual filename
 boAwake = bo.results;
-num_points_y = 90;
-num_points_x = 100;
+num_points_y = 100;
+num_points_x = 60;
 G_space = linspace(0.1,16, num_points_x);
 lr_space = logspace(0, 3, num_points_y);
 [lr, G] = meshgrid(lr_space, G_space);
@@ -110,7 +110,7 @@ G = G(:);
 lr = lr(:);
 grid_points = table(lr, G);
 [o,s] = predictObjective(bo.results, grid_points);
-funcEvals = reshape(o,100,90);
+funcEvals = reshape(o,60,100);
 %funcEvals = funcEvals/max(funcEvals);
 subplot(1,2,1);imagesc(G_space,lr_space,funcEvals');
 set(gca, 'ydir', 'normal');
@@ -131,10 +131,10 @@ funcEvals_dyn = funcEvalsAwake;
 save("Results/dyn_fc/results_awake_dyn_fc.mat", "lr_dyn_fc","G_dyn_fc","funcEvals_dyn","lr_space","G_space")
 
 
-bo = load('./Results/dyn_fc/HCP_Deep_sameranges.mat'); % Replace 'your_saved_bo_object.mat' with the actual filename
+bo = load('./Results/dyn_fc/HCP_Deep_sameranges.mat'); % Replace '%your_saved_bo_object.mat' with the actual filename
 boDeep = bo.results;
-num_points_y = 90;
-num_points_x = 100;
+num_points_y = 100;
+num_points_x = 60;
 G_space = linspace(0.1,16, num_points_x);
 lr_space = logspace(0, 3, num_points_y);
 [lr, G] = meshgrid(lr_space, G_space);
@@ -142,7 +142,7 @@ G = G(:);
 lr = lr(:);
 grid_points = table(lr, G);
 [o,s] = predictObjective(bo.results, grid_points);
-funcEvals = reshape(o,100,90);
+funcEvals = reshape(o,60,100);
 %funcEvals = funcEvals/max(funcEvals);
 subplot(1,2,2);imagesc(G_space,lr_space,funcEvals');
 set(gca, 'ydir', 'normal');
@@ -163,18 +163,18 @@ funcEvals_dyn = funcEvalsDeep;
 save("Results/dyn_fc/results_deep_dyn_fc.mat", "lr_dyn_fc","G_dyn_fc","funcEvals_dyn","lr_space","G_space")
 
 sgtitle("Dynamic FC fit") % Add a title for the whole figure
-savefig('plots/Awake-vs-Deep-FC_Dynamic.fig')
-saveas(gcf, 'plots/Awake-vs-Deep-FC_Dynamic.png')
+%savefig('plots/Awake-vs-Deep-FC_Dynamic.fig')
+%saveas(gcf, 'plots/Awake-vs-Deep-FC_Dynamic.png')
 %%
 
 
 %% STATIC
 
 figure;
-bo = load('./Results/stat_fcd/HCP_Awake_sameranges.mat'); % Replace 'your_saved_bo_object.mat' with the actual filename
+bo = load('./Results/stat_fcd/HCP_Awake_sameranges.mat'); % Replace '%your_saved_bo_object.mat' with the actual filename
 boAwake = bo.results;
-num_points_y = 90;
-num_points_x = 100;
+num_points_y = 100;
+num_points_x = 60;
 G_space = linspace(0.1,16, num_points_x);
 alpha_space = linspace(0.65, 0.85, num_points_y);
 [alpha, G] = meshgrid(alpha_space, G_space);
@@ -182,7 +182,7 @@ G = G(:);
 alpha = alpha(:);
 grid_points = table(alpha, G);
 [o,s] = predictObjective(bo.results, grid_points);
-funcEvals = reshape(o,100,90);
+funcEvals = reshape(o,60,100);
 %funcEvals = funcEvals/max(funcEvals);
 subplot(1,2,1);imagesc(G_space,alpha_space,funcEvals');set(gca, 'ydir', 'normal')
 title("Awake")
@@ -203,10 +203,10 @@ save("Results/stat_fcd/results_awake_stat_fcd.mat", "alpha_stat_fcd","G_stat_fcd
 
 %
 
-bo = load('./Results/stat_fcd/HCP_Deep_sameranges.mat'); % Replace 'your_saved_bo_object.mat' with the actual filename
+bo = load('./Results/stat_fcd/HCP_Deep_sameranges.mat'); % Replace '%your_saved_bo_object.mat' with the actual filename
 boDeep = bo.results;
-num_points_y = 90;
-num_points_x = 100;
+num_points_y = 100;
+num_points_x = 60;
 G_space = linspace(0.1,16, num_points_x);
 alpha_space = linspace(0.65, 0.85, num_points_y);
 [alpha, G] = meshgrid(alpha_space, G_space);
@@ -214,7 +214,7 @@ G = G(:);
 alpha = alpha(:);
 grid_points = table(alpha, G);
 [o,s] = predictObjective(bo.results, grid_points);
-funcEvals = reshape(o,100,90);
+funcEvals = reshape(o,60,100);
 %funcEvals = funcEvals/max(funcEvals);
 subplot(1,2,2);imagesc(G_space,alpha_space,funcEvals');set(gca, 'ydir', 'normal')
 
@@ -237,14 +237,14 @@ save("Results/stat_fcd/results_deep_stat_fcd.mat", "alpha_stat_fcd","G_stat_fcd"
 
 
 sgtitle("Static FCD fit") % Add a title for the whole figure
-savefig('plots/Awake-vs-Deep-FCD_Static.fig')
-saveas(gcf, 'plots/Awake-vs-Deep-FCD_Static.png')
+%savefig('plots/Awake-vs-Deep-FCD_Static.fig')
+%saveas(gcf, 'plots/Awake-vs-Deep-FCD_Static.png')
 %
 figure;
-bo = load('./Results/stat_fc/HCP_Awake_sameranges.mat'); % Replace 'your_saved_bo_object.mat' with the actual filename
+bo = load('./Results/stat_fc/HCP_Awake_sameranges.mat'); % Replace '%your_saved_bo_object.mat' with the actual filename
 boAwake = bo.results;
-num_points_y = 90;
-num_points_x = 100;
+num_points_y = 100;
+num_points_x = 60;
 G_space = linspace(0.1,16, num_points_x);
 alpha_space = linspace(0.65, 0.85, num_points_y);
 [alpha, G] = meshgrid(alpha_space, G_space);
@@ -252,7 +252,7 @@ G = G(:);
 alpha = alpha(:);
 grid_points = table(alpha, G);
 [o,s] = predictObjective(bo.results, grid_points);
-funcEvals = reshape(o,100,90);
+funcEvals = reshape(o,60,100);
 %funcEvals = funcEvals/max(funcEvals);
 subplot(1,2,1);imagesc(G_space,alpha_space,funcEvals');set(gca, 'ydir', 'normal')
 title("FC fit Awake")
@@ -271,10 +271,10 @@ save("Results/stat_fc/results_awake_stat_fc.mat", "alpha_stat_fc","G_stat_fc","f
 
 %
 
-bo = load('./Results/stat_fc/HCP_Deep_sameranges.mat'); % Replace 'your_saved_bo_object.mat' with the actual filename
+bo = load('./Results/stat_fc/HCP_Deep_sameranges.mat'); % Replace '%your_saved_bo_object.mat' with the actual filename
 boDeep = bo.results;
-num_points_y = 90;
-num_points_x = 100;
+num_points_y = 100;
+num_points_x = 60;
 G_space = linspace(0.1,16, num_points_x);
 alpha_space = linspace(0.65, 0.85, num_points_y);
 [alpha, G] = meshgrid(alpha_space, G_space);
@@ -282,7 +282,7 @@ G = G(:);
 alpha = alpha(:);
 grid_points = table(alpha, G);
 [o,s] = predictObjective(bo.results, grid_points);
-funcEvals = reshape(o,100,90);
+funcEvals = reshape(o,60,100);
 %funcEvals = funcEvals/max(funcEvals);
 subplot(1,2,2);imagesc(G_space,alpha_space,funcEvals');set(gca, 'ydir', 'normal')
 title("FC fit Deep")
@@ -303,7 +303,7 @@ save("Results/stat_fc/results_deep_stat_fc.mat", "alpha_stat_fc","G_stat_fc","fu
 
 
 sgtitle("Static FC fit") % Add a title for the whole figure
-savefig('plots/Awake-vs-Deep-FC_Static.fig')
-saveas(gcf, 'plots/Awake-vs-Deep-FC_Static.png')
+%savefig('plots/Awake-vs-Deep-FC_Static.fig')
+%saveas(gcf, 'plots/Awake-vs-Deep-FC_Static.png')
 %%
-
+close all;

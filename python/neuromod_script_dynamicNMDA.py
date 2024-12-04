@@ -30,7 +30,7 @@ def compute_fcd(data, wsize, overlap, isubdiag):
 C = loadmat('./data/DTI_fiber_consensus_HCP.mat')['connectivity'][:200, :200]
 C = 0.2*C/np.max(C)
 params = dmf.default_params(C=C)
-RECEPTORS = np.load("./data/Schaeffer200-Tian/5HT2a_cimbi_hc29_beliveau_schaeffer200.npy")[:200]
+RECEPTORS = np.load("./data/Schaeffer200-Tian/NMDA_ge179_hc29_galovic_schaeffer200.npy")[:200]
 RECEPTORS = RECEPTORS/max(RECEPTORS)-min(RECEPTORS)
 RECEPTORS = RECEPTORS - max(RECEPTORS) + 1
 params["receptors"] = RECEPTORS
@@ -162,7 +162,7 @@ arrays_to_save = {
 }
 
 
-results_folder = "./Results/neuromod/dynamic5HT2a"
+results_folder = "./Results/neuromod/dynamicNMDA"
 if not os.path.exists(results_folder):
     os.makedirs(results_folder)
 
