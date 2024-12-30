@@ -1,6 +1,6 @@
-results_dyn = load('/network/lustre/iss02/home/ivan.mindlin/dyn_fic_dmf/matlab/Results/dyn_fcd/results_GoodRange_2.mat');
+results_dyn = load('/network/iss/home/ivan.mindlin/dyn_fic_dmf/matlab/Results/dyn_fcd/results_GoodRange_2.mat');
 results_dyn = results_dyn.BayesoptResults;
-results_stat = load('/network/lustre/iss02/home/ivan.mindlin/dyn_fic_dmf/matlab/Results/stat_fcd/results_GoodRange_2.mat');
+results_stat = load('/network/iss/home/ivan.mindlin/dyn_fic_dmf/matlab/Results/stat_fcd/results_GoodRange_2.mat');
 results_stat = results_stat.BayesoptResults;
 
 % Plotting the training curves

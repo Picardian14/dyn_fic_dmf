@@ -1,7 +1,7 @@
 from setuptools import setup, Extension
 
 ext = Extension('_DYN_FIC_DMF',
-                libraries = ['boost_python38', 'boost_numpy38'],
+                libraries = ['boost_python310', 'boost_numpy310'],
                 sources   = ['fastdyn_fic_dmf/DYN_FIC_DMF.cpp'])
 
 setup(name              = 'fastdyn_fic_dmf',
