@@ -33,7 +33,7 @@ params.burnout = 10; % seconds to remove after initial transient of simulation
 params.flp = 0.04; % low cut-off of the bandpass filter 0.01 for aal wake
 params.fhi = 0.07; % high cut-off of the bandpass filter 0.1
 params.wsize = 30; % size of the FCD windows
-params.overlap = 28; % overlap of the FCD windows
+params.overlap = 29; % overlap of the FCD windows
 params.TR = TR; % repetition time of the fMRI signal (will be used to simulate fMRI)
 % Setting data constants
 params.receptors = RECEPTORS;

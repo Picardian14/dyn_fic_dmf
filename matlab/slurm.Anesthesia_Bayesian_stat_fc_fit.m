@@ -46,7 +46,7 @@ params.TR = 2;
 params.flp = 0.008; 
 params.fhi = 0.08; 
 params.wsize = 30; 
-params.overlap = 28; 
+params.overlap = 29; 
 params.N=length(params.C);
 %params.seed = sub_experiment_name;
 load('./data/BOLD_timeseries_Deep.mat')
@@ -70,7 +70,7 @@ for nsub=indexsub
 end
 WFCdataF = permute(WFCdataF, [2,3,1]);
 emp_fc = mean(WFCdataF,3);
-NHOURS = 12;
+NHOURS = 24;
 % bayesian model params
 checkpoint_file = "Results/stat_fc/results_"+sub_experiment_name+".mat";
 bo_opts = {'IsObjectiveDeterministic',false,'UseParallel',true,... %% Will be determinsitic so we do not estimate error
