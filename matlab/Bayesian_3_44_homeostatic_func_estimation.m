@@ -8,7 +8,7 @@
 #SBATCH --output=outputs/HomFuncEstim.out
 #SBATCH --error=outputs/HomFuncEstim.err
 
-ml MATLAB/R2022b
+ml matlab/R2022b
 
 matlab -nodisplay<<-EOF
 

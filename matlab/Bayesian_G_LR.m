@@ -8,7 +8,7 @@
 #SBATCH --output=outputs/G_LR_Freqs.out
 #SBATCH --error=outputs/G_LR_Freqs.err
 
-ml MATLAB/R2022b
+ml matlab/R2022b
 
 matlab -nodisplay<<-EOF
 

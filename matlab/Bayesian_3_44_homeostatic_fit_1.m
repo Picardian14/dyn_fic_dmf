@@ -8,7 +8,7 @@
 #SBATCH --output=outputs/BigGHomFit1.out
 #SBATCH --error=outputs/BigGHomFit1.err
 
-ml MATLAB/R2022b
+ml matlab/R2022b
 
 matlab -nodisplay<<-EOF
 

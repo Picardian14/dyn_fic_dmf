@@ -8,7 +8,7 @@
 #SBATCH --output=outputs/HCP_Deep_sameranges_stat_fcd_fit.out
 #SBATCH --error=outputs/HCP_Deep_sameranges_stat_fcd_fit.err
 
-ml MATLAB/R2022b
+ml matlab/R2022b
 matlab -nodisplay<<-EOF
 
 clear all;
