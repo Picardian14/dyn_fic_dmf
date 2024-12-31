@@ -1,3 +1,5 @@
+*.png
+*.pdf
 matlab/outputs/
 matlab/Results/
 matlab/data/
@@ -5,7 +7,8 @@ python/Results/
 python/outputs/
 python/data/
 clusterScripts/outputs/
-
+outputs/
+.vscode/
 Figures/
 *.mexa64
 dist/

@@ -44,7 +44,7 @@ params.TR = 2;
 params.flp = 0.01; 
 params.fhi = 0.1; 
 params.wsize = 30; 
-params.overlap = 28; 
+params.overlap = 29; 
 params.N=length(params.C);
 
 load('./data/BOLD_timeseries_Awake.mat')
