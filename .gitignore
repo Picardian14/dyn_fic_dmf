@@ -1,5 +1,6 @@
 *.png
 *.pdf
+paper_figs/
 matlab/outputs/
 matlab/Results/
 matlab/data/
