@@ -141,6 +141,10 @@ function plotScenario(resultFileAwake, resultFileDeep,yVarName, ySpace, yLabelNa
     minEstimatedG_Awake = XatminEstimatedAwake.G;
     minEstimatedY_Awake = XatminEstimatedAwake.(yVarName);
     funcEvals_data_Awake = funcEvalsAwake;
+    disp("Optimal estimated point for Awake: ");
+    disp("G: "+minEstimatedG_Awake);
+    disp("y: "+minEstimatedY_Awake);
+
     save(savePathAwake, 'minEstimatedY_Awake', 'minEstimatedG_Awake', 'funcEvals_data_Awake', 'ySpace', 'G_space','minRegionMask');
 
     % Load Deep data
