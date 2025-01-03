@@ -78,9 +78,10 @@ def simulate_one_seed(args):
     # Returns: (rates, bold, fic, etc.) -- adjust if your function differs
     _, _, bold, _ = dmf.run(params, nb_steps)
     
+    # Take out the nan values
+    bold[np.isnan(bold)] = 0
     # Burn out the initial transients
     bold_post = bold[:, burnout:]  # shape [N, T-burnout]
-    
     # If we need to filter the BOLD, do it here
     # Convert to shape [time, nodes] for correlation
     bold_post = bold_post.T  # shape [T-burnout, N]
