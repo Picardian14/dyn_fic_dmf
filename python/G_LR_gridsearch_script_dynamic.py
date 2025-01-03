@@ -45,8 +45,10 @@ def compute_fcd(data, wsize, overlap, isubdiag):
         window_data = data[start:start + wsize, :]
         cormat = np.corrcoef(window_data.T)
         fcd_mat.append(cormat[isubdiag])
-    
-    return np.array(fcd_mat)  # shape [num_windows, n_subdiag]
+    fcd_mat = np.corrcoef(np.array(fcd_mat))  # shape [num_windows, n_subdiag]
+    return fcd_mat  # shape [num_windows, n_subdiag]
+
+
 
 def simulate_one_seed(args):
     """
@@ -74,7 +76,7 @@ def simulate_one_seed(args):
 
     # Run DMF
     # Returns: (rates, bold, fic, etc.) -- adjust if your function differs
-    rates, bold, _, _ = dmf.run(params, nb_steps)
+    _, _, bold, _ = dmf.run(params, nb_steps)
     
     # Burn out the initial transients
     bold_post = bold[:, burnout:]  # shape [N, T-burnout]
@@ -128,7 +130,7 @@ def grid_step(args):
     for seed_id in seed_list:
         # Some unique seed scheme:
         # e.g. seed_in = seed_id + 1000 * idx_lr + 10000 * idx_g
-        seed_in = seed_id + 1000 * idx_lr + 10000 * idx_g
+        seed_in = seed_id + idx_lr + 2 * idx_g
         simulate_args.append((
             params,           # base param
             nb_steps,
@@ -142,17 +144,23 @@ def grid_step(args):
         ))
     
     # Run seeds in parallel
-    with Pool() as local_pool:
+    NWORKERS = 16
+    fcs = []
+    with Pool(NWORKERS) as local_pool:
         results = local_pool.map(simulate_one_seed, simulate_args)
+    # Kill Pool
+    local_pool.close()
 
     # Aggregate
     for fc_seed, fcd_seed in results:
         fc_sum += fc_seed
         fcd_list.append(fcd_seed)
+        fcs.append(fc_seed)
 
     # Average FC
+    
     fc_avg = fc_sum / n_seeds
-
+    
     # Stack FCD => shape [n_seeds, num_windows, n_subdiag]
     fcd_stacked = np.stack(fcd_list, axis=0)
 
@@ -160,7 +168,8 @@ def grid_step(args):
         'idx_lr': idx_lr,
         'idx_g':  idx_g,
         'FC_avg': fc_avg,
-        'FCD_stacked': fcd_stacked
+        'FCD_stacked': fcd_stacked,
+        'fcs': fcs
     }
 
 ################################################################################
@@ -204,7 +213,7 @@ def integrate_results(total_tasks, results_folder,
                 n_subdiag  = fcd_st.shape[2]
 
                 FC_grid  = np.zeros((nLR, nG, N, N), dtype=np.float32)
-                FCD_grid = np.zeros((nLR, nG, n_seeds, num_windows, n_subdiag), dtype=np.float32)
+                FCD_grid = np.zeros((nLR, nG, n_seeds, num_windows, num_windows), dtype=np.float32)
                 loaded_something = True
 
             FC_grid[idx_lr, idx_g]  = fc_avg
@@ -235,7 +244,7 @@ def main():
     total_tasks = 8
     task_idx = args.task_idx
 
-    # Load structural connectivity
+        # Load structural connectivity
     C = loadmat('./data/DTI_fiber_consensus_HCP.mat')['connectivity'][:200,:200]
     C = 0.2 * C / np.max(C)
 
@@ -247,7 +256,7 @@ def main():
     # Filtering params (adapt to your usage)
     params["flp"] = 0.01
     params["fhp"] = 0.1
-    params["TR"]  = 2.0
+    params["TR"]  = 2
 
     # For windowed FCD
     wsize   = 30
@@ -255,7 +264,7 @@ def main():
 
     # Burnout in time points (or directly # of samples)
     burnout = 7  # if your run uses 1 step = 1 ms, might be burnout * 1000
-                 # but adapt to how your model is defined
+                    # but adapt to how your model is defined
 
     # Total simulation time in TRs:
     T = 250
@@ -272,9 +281,9 @@ def main():
     a = fit_res[1]  # intercept
 
     # Grid definitions
-    nLR = 50
+    nLR = 110
     LR_range = np.logspace(0, 3, nLR)   # from 1 to 1000
-    nG  = 32
+    nG  = 100
     G_range = np.linspace(0.1, 16, nG)  # from 0.1 to 16
 
     # Seeds per (LR, G)

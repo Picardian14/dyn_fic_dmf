@@ -1,206 +1,355 @@
-from scipy.signal import butter, lfilter
-import fastdyn_fic_dmf as dmf
-import numpy as np
-import matplotlib.pyplot as plt
-# Fetch default parameters
-import tracemalloc
-from scipy.io import loadmat
-from scipy.stats import zscore, pearsonr
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.stats import ks_2samp
+#!/usr/bin/env python3
+import sys
 import os
-#from mne.time_frequency import psd_array_multitaper
+import argparse
+import math
+import time
+import numpy as np
+from scipy.io import loadmat
+from multiprocessing import Pool
 
+# Custom modules (as in your snippet)
+import fastdyn_fic_dmf as dmf
+from helper_functions import filter_bold
+
+################################################################################
+# Helper functions
+################################################################################
+
+def compute_fc(data):
+    """
+    Compute FC by correlating BOLD (or rate) time series.
+    data shape: (time, nodes).
+    Returns an (N x N) correlation matrix.
+    """
+    return np.corrcoef(data.T)  # shape [N, N]
 
 def compute_fcd(data, wsize, overlap, isubdiag):
+    """
+    Compute FCD by sliding a window of length 'wsize' with 'overlap' into 'data'.
+    
+    data shape: (time, nodes).
+    wsize, overlap: integer time points.
+    isubdiag: np.triu_indices(N, 1) or similar.
+
+    Returns a 2D array:
+        shape [num_windows, number_of_corr_pairs]
+    where number_of_corr_pairs = len(isubdiag[0]).
+    """
     T, N = data.shape
-    win_start = np.arange(0, T - wsize - 1, wsize - overlap)
-    nwins = len(win_start)
-    fcd = np.zeros((len(isubdiag[0]), nwins))
-    for i in range(nwins):
-        tmp = data[win_start[i]:win_start[i] + wsize + 1, :]
-        cormat = np.corrcoef(tmp.T)
-        fcd[:, i] = cormat[isubdiag[0],isubdiag[1]]
-    return fcd
-
-
-data_struct = loadmat('./data/ts_coma24_AAL_symm_withSC.mat')
-data = np.zeros((13,90,192))
-for i in range(13):
-    data[i,:,:] = data_struct['timeseries_CNT24_symm'][0][i][:,:192]
-
-C = loadmat('data/SC_and_5ht2a_receptors.mat')['sc90']
-C = 0.2*C/np.max(C)
-params = dmf.default_params(C=C)
-
-# Main setup for this simulation
-params["return_rate"] = True
-params["return_bold"] = True
-params["return_fic"] = True
-# These are now default true
-params["with_plasticity"] = False
-params["with_decay"] = False
-
-isubfcd = np.triu_indices(C.shape[1],1)
-burnout = 7
-flp = 0.01
-fhp = 0.1
-wsize = 30
-overlap = 29
-T = 250
-win_start = np.arange(0, T - wsize, wsize - overlap)
-nwins = len(win_start)
-nints = len(isubfcd[0])
-b_filter,a_filter = butter(2,np.array([0.01, 0.1])*2*params['TR'], btype='band')
-NSUB = 13
-
-emp_fcds = np.zeros((NSUB,4005,4005))
-emp_fcs = np.zeros((NSUB,90,90))
-for i in range(NSUB):
-    bold = data[i]
-    bold[:, (np.ceil(burnout / params['TR'])).astype(int):]    
-    filt_bold = lfilter(b_filter,a_filter,bold)
-    time_fc = compute_fcd(filt_bold.T, wsize, overlap, isubfcd)    
-    bold_fc = np.corrcoef(filt_bold)
-    fcd = np.corrcoef(time_fc)       
-    emp_fcds[i] = fcd
-    emp_fcs[i] = bold_fc
-
-# Load coefficients to estimte Decay with ALPHA
-
-fit_res = np.load("./data/fit_res_3-44.npy")
-b = fit_res[0] # First element is the slope
-a = fit_res[1]
-triu_idx = np.triu_indices(C.shape[1],1)
-params['N'] = C.shape[0]
-
-G_range = [1.7,1.8,1.9,2,2.1,2.2,2.3,2.4,2.5,2.6,2.7]
-ALPHA_range = [0.6,0.65,0.7,0.75,0.8,0.]#np.arange(1,51,2)
+    step = wsize - overlap
+    win_starts = np.arange(0, T - wsize + 1, step)
+    
+    fcd_mat = []
+    for start in win_starts:
+        window_data = data[start:start + wsize, :]
+        cormat = np.corrcoef(window_data.T)
+        fcd_mat.append(cormat[isubdiag])
+    fcd_mat = np.corrcoef(np.array(fcd_mat))  # shape [num_windows, n_subdiag]
+    return fcd_mat  # shape [num_windows, n_subdiag]
 
 
 
-params['TR'] = 2
+def simulate_one_seed(args):
+    """
+    Run the DMF model for a single seed, given alpha and G (plus a,b for DECAY),
+    and return (FC, FCD).
+    """
+    (params_base, nb_steps, burnout, wsize, overlap, seed_id, a, b, isubdiag) = args
 
+    # Copy base params so we don't mutate them
+    params = params_base.copy()
+    params['seed'] = seed_id
+    
+    # Because we want to see plastic changes
+    params["with_plasticity"] = False
+    params["with_decay"]      = False
+    
+    # (Re)compute 'J' after setting alpha, G, etc.
+    # If alpha is always 0.75 or you prefer a different logic, do it here:
+    
+    params['J'] = params['alpha'] * params['G'] * params['C'].sum(axis=0).squeeze() + 1
 
-nb_steps = int((data.shape[-1]-2*burnout)*params['TR']/params['dtt'])
+    # Run DMF
+    # Returns: (rates, bold, fic, etc.) -- adjust if your function differs
+    _, _, bold, _ = dmf.run(params, nb_steps)
+    
+    # Burn out the initial transients
+    bold_post = bold[:, burnout:]  # shape [N, T-burnout]
+    
+    # If we need to filter the BOLD, do it here
+    # Convert to shape [time, nodes] for correlation
+    bold_post = bold_post.T  # shape [T-burnout, N]
+    bold_filt = filter_bold(bold_post, params['flp'], params['fhp'], params['TR'])
 
-NUM_CORES = 24
-G_range = [1,2,3,4,5,6]
-ALPHA_range = [10,200,300,1000]
+    # Compute FC
+    fc_seed = compute_fc(bold_filt)  # shape [N, N]
 
+    # Compute FCD
+    fcd_seed = compute_fcd(bold_filt, wsize, overlap, isubdiag)  
+    # shape [num_windows, n_subdiag]
 
-fit_fc_grid = np.zeros((len(G_range),len(ALPHA_range)))
-fit_fcd_grid = np.zeros((len(G_range),len(ALPHA_range)))
-fc_grid = np.zeros((len(G_range),len(ALPHA_range), params['N'],params['N']))
-fcd_grid = np.zeros((len(G_range),len(ALPHA_range), len(isubfcd[0]),len(isubfcd[0])))
-
-burnout = 7
-
-
+    return fc_seed, fcd_seed
 
 def grid_step(args):
-    sim_fcds = np.zeros((NSUB,4005,4005))
-    sim_fcs = np.zeros((NSUB,90,90))
-    G_tuple, ALPHA_tuple = args
-    idx_ALPHA,ALPHA = ALPHA_tuple[0],ALPHA_tuple[1]
-    idx_G,G = G_tuple[0],G_tuple[1]
-    print(f"Doing {G} {ALPHA}")
-   
-    OBJ_RATE = 3.44    
-    params['G'] = G
-    params['obj_rate'] = OBJ_RATE
-    #params['taoj'] = 210000
-    params['J'] = 0.75*params['G']*params['C'].sum(axis=0).squeeze() + 1
-    for rep in range(NSUB):
+    """
+    Process a single (alpha, G) pair by running multiple seeds.
+    Return:
+      {
+        'idx_alpha': idx_alpha,
+        'idx_g':  idx_g,
+        'FC_avg':  (N x N),
+        'FCD_stacked': (n_seeds x num_windows x n_subdiag)
+      }
+    """
+    (idx_alpha, alpha_val, idx_g, G_val,
+     params, nb_steps, burnout, wsize, overlap, n_seeds,
+     a, b, isubdiag) = args
+
+    # Set the alpha & G in the param dictionary
+    params['alpha'] = alpha_val
+    params['G']   = G_val
+    
+    N = params['N']
+
+    # We'll sum FCs to get an average later
+    fc_sum = np.zeros((N, N), dtype=np.float32)
+    fcd_list = []
+
+    # Prepare a local list of seeds
+    # Example: we might do seeds = range(n_seeds), or something more elaborate
+    # For demonstration, we just do seeds 0..(n_seeds-1)
+    seed_list = range(n_seeds)
+    
+    # Build arguments for simulate_one_seed
+    simulate_args = []
+    for seed_id in seed_list:
+        # Some unique seed scheme:
+        # e.g. seed_in = seed_id + 1000 * idx_alpha + 10000 * idx_g
+        seed_in = seed_id + idx_alpha + 2 * idx_g
+        simulate_args.append((
+            params,           # base param
+            nb_steps,
+            burnout,
+            wsize,
+            overlap,
+            seed_in,
+            a,
+            b,
+            isubdiag
+        ))
+    
+    # Run seeds in parallel
+    NWORKERS = 16
+    fcs = []
+    with Pool(NWORKERS) as local_pool:
+        results = local_pool.map(simulate_one_seed, simulate_args)
+    # Kill Pool
+    local_pool.close()
+
+    # Aggregate
+    for fc_seed, fcd_seed in results:
+        fc_sum += fc_seed
+        fcd_list.append(fcd_seed)
+        fcs.append(fc_seed)
+
+    # Average FC
+    
+    fc_avg = fc_sum / n_seeds
+    
+    # Stack FCD => shape [n_seeds, num_windows, n_subdiag]
+    fcd_stacked = np.stack(fcd_list, axis=0)
+
+    return {
+        'idx_alpha': idx_alpha,
+        'idx_g':  idx_g,
+        'FC_avg': fc_avg,
+        'FCD_stacked': fcd_stacked,
+        'fcs': fcs
+    }
+
+################################################################################
+# Integration of partial results
+################################################################################
+
+def integrate_results(total_tasks, results_folder,
+                      nalpha, nG, n_seeds, output_folder):
+    """
+    Loads partial results from partial_result_0..(total_tasks-1).npy
+    and constructs final arrays:
+      FC_grid:  (nalpha, nG, N, N)
+      FCD_grid: (nalpha, nG, n_seeds, num_windows, n_subdiag)
+
+    Then saves them to output_folder.
+    """
+    print("[integrate_results] Integrating partial results...")
+
+    FC_grid = None
+    FCD_grid = None
+    loaded_something = False
+
+    for task_idx in range(total_tasks):
+        partial_file = os.path.join(results_folder, f"partial_result_{task_idx}.npy")
+        if not os.path.exists(partial_file):
+            print(f"  [Warning] partial file not found: {partial_file}")
+            continue
         
-        rates, rates_inh, bold, fic_t = dmf.run(params, nb_steps)     
-        bold = bold[:, (np.ceil(burnout / params['TR'])).astype(int):]
-        filt_bold = lfilter(b_filter,a_filter,bold)
-        time_fc = compute_fcd(filt_bold.T, wsize, overlap, isubfcd)
-        # Replace 'compute_fcd' with the appropriate function or code that computes time_fc
-        bold_fc = np.corrcoef(filt_bold)
-        fcd = np.corrcoef(time_fc)
-        sim_fcs[rep] = bold_fc
-        sim_fcds[rep] = fcd
-    print("Finished reptitions")
-    mean_fc = np.mean(sim_fcs,axis=0)
-    corr_to_sc = pearsonr(mean_fc[triu_idx[0],triu_idx[1]], C[triu_idx[0],triu_idx[1]])[0]        
-    print("Calcualted corr to FC")
-    mean_fcds = np.mean(sim_fcds,axis=0)
-    ks, p = ks_2samp(mean_fcds.flatten(),np.mean(emp_fcds,axis=0).flatten())
-    print("Calcualted sim fcd")    
-    folder_path = f"./Results/fit_coma_cnt/static/{idx_G}_{idx_ALPHA}"
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)    
-    filename = f"mean-fc.txt"    
-    file_path = os.path.join(folder_path, filename)    
-    np.savetxt(file_path, mean_fc)
+        # Each partial is a list of dicts: { 'idx_alpha', 'idx_g', 'FC_avg', 'FCD_stacked' }
+        partial_data = np.load(partial_file, allow_pickle=True)
+        
+        for item in partial_data:
+            idx_alpha = item['idx_alpha']
+            idx_g  = item['idx_g']
+            fc_avg = item['FC_avg']       # shape [N, N]
+            fcd_st = item['FCD_stacked']  # shape [n_seeds, num_windows, n_subdiag]
 
-    #filename = f"mean-fcds.txt"    
-    #file_path = os.path.join(folder_path, filename)    
-    #np.savetxt(file_path, mean_fcds)
+            if not loaded_something:
+                N = fc_avg.shape[0]
+                num_windows = fcd_st.shape[1]
+                n_subdiag  = fcd_st.shape[2]
 
-    filename = f"corr-to-sc.txt"    
-    file_path = os.path.join(folder_path, filename)    
-    with open(file_path, 'w') as file:
-        file.write(str(corr_to_sc))
+                FC_grid  = np.zeros((nalpha, nG, N, N), dtype=np.float32)
+                FCD_grid = np.zeros((nalpha, nG, n_seeds, num_windows, num_windows), dtype=np.float32)
+                loaded_something = True
 
-    filename = f"ks.txt"    
-    file_path = os.path.join(folder_path, filename)    
-    with open(file_path, 'w') as file:
-        file.write(str(ks))
+            FC_grid[idx_alpha, idx_g]  = fc_avg
+            FCD_grid[idx_alpha, idx_g] = fcd_st
 
-    return idx_G,idx_ALPHA, corr_to_sc,ks, mean_fc, mean_fcds
+    # Save final results
+    os.makedirs(output_folder, exist_ok=True)
+    if FC_grid is not None:
+        np.save(os.path.join(output_folder, "FC_grid.npy"), FC_grid)
+        print("[integrate_results] Saved FC_grid")
+    if FCD_grid is not None:
+        np.save(os.path.join(output_folder, "FCD_grid.npy"), FCD_grid)
+        print("[integrate_results] Saved FCD_grid")
 
+    print("[integrate_results] Done.")
 
-from multiprocessing import Pool,Manager
+################################################################################
+# Main script
+################################################################################
 
+def main():
+    parser = argparse.ArgumentParser(description="Grid search over alpha & G, computing FC & FCD.")
+    parser.add_argument('--task_idx', type=int, required=True,
+                        help='Task index (0..total_tasks-1 for SLURM array).')
+    args = parser.parse_args()
 
-# Define the number of cores to use
+    # Slurm-like config
+    total_tasks = 8
+    task_idx = args.task_idx
 
-# Create a list of argument tuples for the nested loop function
-args_list = [((idx_G,G), (idx_ALPHA,ALPHA))
-             for idx_G,G in enumerate(G_range)             
-             for idx_ALPHA,ALPHA in enumerate(ALPHA_range)]
+        # Load structural connectivity
+    C = loadmat('./data/DTI_fiber_consensus_HCP.mat')['connectivity'][:200,:200]
+    C = 0.2 * C / np.max(C)
 
-manager = Manager()
-results_list = manager.list()
-# Create a pool of worker processes
-with Pool(processes=NUM_CORES) as pool:
-    # Map the nested loop function to the argument list across multiple processes
-    results_list.extend(pool.map(grid_step, args_list))
+    # Base DMF params
+    params = dmf.default_params(C=C)
+    params['N'] = C.shape[0]
+    N = params['N']
 
+    # Filtering params (adapt to your usage)
+    params["flp"] = 0.01
+    params["fhp"] = 0.1
+    params["TR"]  = 2
 
-for results in results_list:
-    idx_G = results[0]    
-    idx_ALPHA = results[1]
-    fit_fc = results[2]
-    fit_fcd = results[3] 
-    fc = results[4]  
-    fcd = results[5]
-    
-    fit_fc_grid[idx_G,idx_ALPHA] = fit_fc
-    fit_fcd_grid[idx_G,idx_ALPHA] = fit_fcd
-    fc_grid[idx_G,idx_ALPHA] = fc
-    fcd_grid[idx_G,idx_ALPHA] = fcd
+    # For windowed FCD
+    wsize   = 30
+    overlap = 29
 
+    # Burnout in time points (or directly # of samples)
+    burnout = 7  # if your run uses 1 step = 1 ms, might be burnout * 1000
+                    # but adapt to how your model is defined
 
-import os
+    # Total simulation time in TRs:
+    T = 250
+    # We assume dtt from your snippet:
+    params['dtt'] = 0.001
+    nb_steps = int(T * params["TR"] / params["dtt"])
 
-# Assuming these arrays are already populated with data
+    # Indices for the upper triangular part (for FC or FCD)
+    isubdiag = np.triu_indices(N, 1)
 
-arrays_to_save = {
-    'fit_fc_grid': fit_fc_grid,
-    'fit_fcd_grid': fit_fcd_grid,
-    'fc_grid': fc_grid,
-    'fcd_grid': fcd_grid
-    
-}
+    # Load slope and intercept for DECAY
+    fit_res  = np.load("./data/fit_res_3-44.npy", allow_pickle=True)
+    b = fit_res[0]  # slope
+    a = fit_res[1]  # intercept
 
-results_folder = "./Results/fit_coma_cnt/static"
+    # Grid definitions
+    nalpha = 110
+    ALPHA_range = np.logspace(0, 3, nalpha)   # from 1 to 1000
+    nG  = 100
+    G_range = np.linspace(0.1, 16, nG)  # from 0.1 to 16
 
-# Save
-for array_name, array_data in arrays_to_save.items():
-    file_name = os.path.join(results_folder, f"{array_name}.npy")
-    np.save(file_name, array_data)
+    # Seeds per (alpha, G)
+    n_seeds = 16
+
+    # Build the entire list of (alpha, G) pairs
+    all_args = []
+    for idx_alpha, alpha_val in enumerate(ALPHA_range):
+        for idx_g, G_val in enumerate(G_range):
+            # We pass everything needed, including a,b
+            all_args.append((
+                idx_alpha, alpha_val,
+                idx_g,  G_val,
+                params.copy(),
+                nb_steps,
+                burnout,
+                wsize,
+                overlap,
+                n_seeds,
+                a, b,
+                isubdiag
+            ))
+
+    # Distribute (alpha, G) pairs among tasks
+    total_pairs = len(all_args)
+    chunk_size = math.ceil(total_pairs / total_tasks)
+    start_idx = task_idx * chunk_size
+    end_idx   = min(start_idx + chunk_size, total_pairs)
+    task_args = all_args[start_idx:end_idx]
+
+    # Folder for partial results
+    partial_results_folder = "./Results/Partial_Grid_alpha_G"
+    os.makedirs(partial_results_folder, exist_ok=True)
+
+    # Each task processes its chunk of (alpha, G) pairs in SERIAL,
+    # but seeds are parallelized in grid_step().
+    results = []
+    for arg_tuple in task_args:
+        # grid_step() itself parallelizes across seeds
+        result = grid_step(arg_tuple)
+        results.append(result)
+
+    # Save partial results
+    partial_file = os.path.join(partial_results_folder, f"partial_result_{task_idx}.npy")
+    np.save(partial_file, results)
+    print(f"[main] Task {task_idx} saved partial results: {partial_file}")
+
+    # Integrator on task_idx=0
+    if task_idx == 0:
+        print("[main] Integrator waiting for other tasks...")
+        expected_files = [
+            os.path.join(partial_results_folder, f"partial_result_{i}.npy")
+            for i in range(total_tasks)
+        ]
+        while True:
+            existing = [f for f in expected_files if os.path.exists(f)]
+            if len(existing) == total_tasks:
+                print("[main] All partial results found. Proceeding to integration.")
+                break
+            else:
+                print(f"[main] {len(existing)}/{total_tasks} partial files found, waiting...")
+                time.sleep(30)
+
+        # Integrate them into final arrays
+        output_folder = "./Results/FC_FCD_Grid"
+        integrate_results(total_tasks,
+                          partial_results_folder,
+                          nalpha, nG, n_seeds,
+                          output_folder)
+        print("[main] Integration completed.")
+
+if __name__ == "__main__":
+    main()

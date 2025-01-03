@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=g_lr_dyn_grid
-#SBATCH --cpus-per-task=24
+#SBATCH --cpus-per-task=16
 #SBATCH --time=72:00:00
-#SBATCH --mem=32G
+#SBATCH --mem=64G
 #SBATCH --output=outputs/g_lr_dyn_%A_%a.out
 #SBATCH --error=outputs/g_lr_dyn%A_%a.err
 #SBATCH --chdir=/network/iss/home/ivan.mindlin/
