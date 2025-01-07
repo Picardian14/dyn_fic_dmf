@@ -18,7 +18,8 @@ close all;
 addpath ../dynamic_fic_dmf_Cpp Results/ functions/ outputs/ data/
 mex ../dynamic_fic_dmf_Cpp/dyn_fic_DMF.cpp
 load data/DTI_fiber_consensus_HCP.mat
-C = 0.2.*connectivity(1:200,1:200)./max(connectivity(1:200,1:200));
+C = connectivity(1:200,1:200);
+C = 0.2.*C./max(C(:));
 stren = sum(C)./2;
 params = dyn_fic_DefaultParams('C',C);
 N=length(params.C);
