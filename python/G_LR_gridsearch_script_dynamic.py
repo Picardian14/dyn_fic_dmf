@@ -56,7 +56,7 @@ def simulate_one_seed(args):
     and return (FC, FCD).
     """
     (params_base, nb_steps, burnout, wsize, overlap, seed_id, a, b, isubdiag) = args
-
+    
     # Copy base params so we don't mutate them
     params = params_base.copy()
     params['seed'] = seed_id
@@ -73,25 +73,46 @@ def simulate_one_seed(args):
     # If alpha is always 0.75 or you prefer a different logic, do it here:
     params['alpha'] = 0.75
     params['J'] = params['alpha'] * params['G'] * params['C'].sum(axis=0).squeeze() + 1
-
+    T = 250
+    win_start = np.arange(0, T - burnout - wsize, wsize - overlap)
+    nwins = len(win_start)
     # Run DMF
     # Returns: (rates, bold, fic, etc.) -- adjust if your function differs
-    _, _, bold, _ = dmf.run(params, nb_steps)
-    
-    # Take out the nan values
-    bold[np.isnan(bold)] = 0
-    # Burn out the initial transients
-    bold_post = bold[:, burnout:]  # shape [N, T-burnout]
-    # If we need to filter the BOLD, do it here
-    # Convert to shape [time, nodes] for correlation
-    bold_post = bold_post.T  # shape [T-burnout, N]
-    bold_filt = filter_bold(bold_post, params['flp'], params['fhp'], params['TR'])
+    try:
+        _, _, bold, _ = dmf.run(params, nb_steps)
+        print(f"Seed {seed_id}: Simulation done.")
 
-    # Compute FC
-    fc_seed = compute_fc(bold_filt)  # shape [N, N]
+        # Print how many NaNs we have
+        nans = np.sum(np.isnan(bold))
+        print(f"Seed {seed_id} has {nans} NaNs.")
+        # Take out the nan values
+        bold[np.isnan(bold)] = 0
+        # Count the number of regions with any NaNs
+        nans_per_region = np.isnan(bold_post).any(axis=0)
+        n_regions_with_nans = np.sum(nans_per_region)
+        print(f"Seed {seed_id}: {n_regions_with_nans} regions have NaNs.")
 
-    # Compute FCD
-    fcd_seed = compute_fcd(bold_filt, wsize, overlap, isubdiag)  
+        if n_regions_with_nans > 10:
+            print(f"Seed {seed_id}: More than 10 regions have NaNs. Setting FC and FCD to zeros.")
+            fc_seed = np.zeros((params['N'], params['N']), dtype=np.float32)
+            fcd_seed = np.zeros((nwins, nwins), dtype=np.float32)
+        else:
+            # Convert to shape [time, nodes] for correlation
+            bold_post = bold_post.T  # shape [T-burnout, N]
+            print(f"Seed {seed_id}: Filtering BOLD...")
+            bold_filt = filter_bold(bold_post, params['flp'], params['fhp'], params['TR'])
+
+            # Compute FC
+            fc_seed = compute_fc(bold_filt)  # shape [N, N]
+            print(f"Seed {seed_id}: FC computed.")
+            # Compute FCD
+            fcd_seed = compute_fcd(bold_filt, wsize, overlap, isubdiag)  
+            print(f"Seed {seed_id}: FC shape: {fc_seed.shape}, FCD shape: {fcd_seed.shape}")
+    except:
+        print(f"Error in seed {seed_id}, returning zeros.")
+        print(f"G={params['G']}, LR={params['lrj']}")
+        fc_seed = np.zeros((params['N'], params['N']), dtype=np.float32)
+        fcd_seed = np.zeros((nwins, nwins), dtype=np.float32)
     # shape [num_windows, n_subdiag]
 
     return fc_seed, fcd_seed
@@ -114,7 +135,7 @@ def grid_step(args):
     # Set the LR & G in the param dictionary
     params['lrj'] = LR_val
     params['G']   = G_val
-    
+    print(f"Processing LR={LR_val}, G={G_val}")
     N = params['N']
 
     # We'll sum FCs to get an average later
@@ -242,7 +263,7 @@ def main():
     args = parser.parse_args()
 
     # Slurm-like config
-    total_tasks = 8
+    total_tasks = 24
     task_idx = args.task_idx
 
         # Load structural connectivity
@@ -316,15 +337,21 @@ def main():
     task_args = all_args[start_idx:end_idx]
 
     # Folder for partial results
-    partial_results_folder = "./Results/Partial_Grid_LR_G"
+    partial_results_folder = "/network/iss/cohen/data/Ivan/dyn_fic_dmf_simulations/Results/Partial_Grid_LR_G"
     os.makedirs(partial_results_folder, exist_ok=True)
 
     # Each task processes its chunk of (LR, G) pairs in SERIAL,
     # but seeds are parallelized in grid_step().
     results = []
     for arg_tuple in task_args:
-        # grid_step() itself parallelizes across seeds
+        idx_lr, LR_val, idx_g, G_val, *_ = arg_tuple
+        start_time = time.time()
         result = grid_step(arg_tuple)
+        end_time = time.time()
+        elapsed = end_time - start_time
+        print(f"Processed LR={LR_val}, G={G_val} in {elapsed:.2f} seconds")
+        # Print the progess of the total amount of steps to do
+        print(f"Task {task_idx}: {len(results)}/{len(task_args)} completed.")
         results.append(result)
 
     # Save partial results
@@ -349,7 +376,7 @@ def main():
                 time.sleep(30)
 
         # Integrate them into final arrays
-        output_folder = "./Results/FC_FCD_Grid"
+        output_folder = "/network/iss/cohen/data/Ivan/dyn_fic_dmf_simulations/Results/FC_FCD_Grid"
         integrate_results(total_tasks,
                           partial_results_folder,
                           nLR, nG, n_seeds,

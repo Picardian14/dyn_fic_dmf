@@ -311,7 +311,7 @@ def main():
     task_args = all_args[start_idx:end_idx]
 
     # Folder for partial results
-    partial_results_folder = "./Results/Partial_Grid_alpha_G"
+    partial_results_folder = "/network/iss/cohen/data/Ivan/dyn_fic_dmf_simulations/Results/Partial_Grid_alpha_G"
     os.makedirs(partial_results_folder, exist_ok=True)
 
     # Each task processes its chunk of (alpha, G) pairs in SERIAL,
@@ -344,7 +344,7 @@ def main():
                 time.sleep(30)
 
         # Integrate them into final arrays
-        output_folder = "./Results/FC_FCD_Grid"
+        output_folder = "/network/iss/cohen/data/Ivan/dyn_fic_dmf_simulations/Results/FC_FCD_Grid"
         integrate_results(total_tasks,
                           partial_results_folder,
                           nalpha, nG, n_seeds,

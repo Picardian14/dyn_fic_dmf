@@ -24,7 +24,8 @@ sub_experiment_name = "HCP_Deep_sameranges";
 %mex ../dynamic_fic_dmf_Cpp/dyn_fic_DMF.cpp
 % Load Data
 load data/DTI_fiber_consensus_HCP.mat
-C = 0.2.*connectivity(1:200,1:200)./max(connectivity(1:200,1:200));
+C = connectivity(1:200,1:200);
+C = 0.2.*C./max(C(:));
 stren = sum(C);
 params = dyn_fic_DefaultParams('C',C);
 % fitting options
