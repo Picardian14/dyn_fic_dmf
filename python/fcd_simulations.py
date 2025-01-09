@@ -152,7 +152,7 @@ def main():
     args = parser.parse_args()
 
     task_idx = args.task_idx
-    total_tasks = 8  # Fixed based on SLURM array=0-7
+    total_tasks = 10  # Fixed based on SLURM array=0-7
 
     # Prepare parameters and data
     C = loadmat('./data/DTI_fiber_consensus_HCP.mat')['connectivity'][:200, :200]

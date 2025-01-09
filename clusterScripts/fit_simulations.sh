@@ -7,7 +7,7 @@
 #SBATCH --output=outputs/fit_simulation%A_%a.out
 #SBATCH --error=outputs/fit_simulation%A_%a.err
 #SBATCH --chdir=/network/iss/home/ivan.mindlin/
-#SBATCH --array=0-7
+#SBATCH --array=0-9
 
 # Load Singularity module
 module load singularity

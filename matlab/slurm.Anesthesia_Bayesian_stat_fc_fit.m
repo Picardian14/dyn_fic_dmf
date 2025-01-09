@@ -71,7 +71,7 @@ for nsub=indexsub
 end
 WFCdataF = permute(WFCdataF, [2,3,1]);
 emp_fc = mean(WFCdataF,3);
-NHOURS = 24;
+NHOURS = 4;
 % bayesian model params
 checkpoint_file = "Results/stat_fc/results_"+sub_experiment_name+".mat";
 bo_opts = {'IsObjectiveDeterministic',false,'UseParallel',true,... %% Will be determinsitic so we do not estimate error
