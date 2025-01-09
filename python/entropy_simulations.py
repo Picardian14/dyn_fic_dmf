@@ -11,27 +11,14 @@ from helper_functions import filter_bold
 from multiprocessing import Pool
 from scipy.stats import gamma  # Import gamma for entropy calculation
 
+
 def calculate_gamma_entropy(node_index, rates):
     print(f"Processing node {node_index}")
-    # Create arrays to store the results
-    alpha = np.zeros((rates.shape[0],))
-    loc = np.zeros((rates.shape[0],))
-    beta = np.zeros((rates.shape[0],))
-    entropy_value = np.zeros((rates.shape[0],))
-    # Average over the axis 0 (repetitions) the entropy value
-    for i in range(rates.shape[0]):
-        print(f"Processing repetition {i}")
-        rep_rates = rates[i]
-        # Fit a gamma distribution to the data
-        alpha[i], loc[i], beta[i] = gamma.fit(rep_rates)
-        # Calculate the entropy of the gamma distribution
-        entropy_value[i] = gamma.entropy(a=alpha[i], loc=loc[i], scale=beta[i])
-    # Average over the repetitions
-    alpha_mean = np.mean(alpha)
-    loc_mean = np.mean(loc)
-    beta_mean = np.mean(beta)
-    entropy_mean = np.mean(entropy_value)    
-    return node_index, alpha_mean, loc_mean, beta_mean, entropy_mean
+    # Fit a gamma distribution to the data
+    alpha, loc, beta = gamma.fit(rates)
+    # Calculate the entropy of the gamma distribution
+    entropy_value = gamma.entropy(a=alpha, loc=loc, scale=beta)
+    return node_index, alpha, loc, beta, entropy_value
 
 def grid_step(args):
     """
@@ -73,11 +60,8 @@ def grid_step(args):
         entropy_dyn.append(entropy)
     dyn_entropy = np.array(entropy_dyn)
 
-    return {
-        'idx_SEED': idx_SEED,
-        'stat_entropy': stat_entropy,
-        'dyn_entropy': dyn_entropy
-    }
+    return idx_SEED,stat_entropy,dyn_entropy
+    
 
 def main():
     
