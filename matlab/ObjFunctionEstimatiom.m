@@ -141,6 +141,7 @@ function plotScenario(resultFileAwake, resultFileDeep,yVarName, ySpace, yLabelNa
     minEstimatedG_Awake = XatminEstimatedAwake.G;
     minEstimatedY_Awake = XatminEstimatedAwake.(yVarName);
     funcEvals_data_Awake = funcEvalsAwake;
+    disp(mainTitle)
     disp("Optimal estimated point for Awake: ");
     disp("G: "+minEstimatedG_Awake);
     disp("y: "+minEstimatedY_Awake);
@@ -196,5 +197,8 @@ function plotScenario(resultFileAwake, resultFileDeep,yVarName, ySpace, yLabelNa
     minEstimatedG_Deep = XatminEstimatedDeep.G;
     minEstimatedY_Deep = XatminEstimatedDeep.(yVarName);
     funcEvals_data_Deep = funcEvalsDeep;
+    disp("Optimal estimated point for Anaesthesia: ");
+    disp("G: "+minEstimatedG_Deep);
+    disp("y: "+minEstimatedY_Deep);
     save(savePathDeep, 'minEstimatedY_Deep', 'minEstimatedG_Deep', 'funcEvals_data_Deep', 'ySpace', 'G_space','minRegionMaskDeep');
 end
