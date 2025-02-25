@@ -7,7 +7,7 @@ if ~exist(folder_name, 'dir')
     mkdir(folder_name);
 end
 
-sub_experiment_name = "HCP_Deep_sameranges_Explor";
+sub_experiment_name = "HCP_Deep_sameranges_12hs_Explor";
 %mex ../dynamic_fic_dmf_Cpp/dyn_fic_DMF.cpp
 % Load Data
 load data/DTI_fiber_consensus_HCP.mat
@@ -62,7 +62,7 @@ end
 WFCdata = permute(WFCdata, [2,3,1]);
 WFCdataF = permute(WFCdataF, [2,3,1]);
 emp_fc = mean(WFCdataF,3);
-NHOURS = 4;
+NHOURS = 12;
 % bayesian model params
 checkpoint_file = "Results/dyn_fcd/results_"+sub_experiment_name+".mat";
 bo_opts = {'IsObjectiveDeterministic',false,'UseParallel',true,... %% Will be determinsitic so we do not estimate error

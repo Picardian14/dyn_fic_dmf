@@ -1,12 +1,13 @@
 #!/bin/bash
 #SBATCH --time=48:00:00
-#SBATCH --job-name=HCP_Deep_sameranges_dyn_fc
+#SBATCH --job-name=HCP_Deep_sameranges_12hs_dyn_fc
 #SBATCH --mail-type=END
 #SBATCH --mail-user=
 #SBATCH --mem=64G
 #SBATCH --cpus-per-task=12
-#SBATCH --output=outputs/HCP_Deep_sameranges_dyn_fc.out
-#SBATCH --error=outputs/HCP_Deep_sameranges_dyn_fc.err
+#SBATCH --chdir=/network/iss/home/ivan.mindlin/dyn_fic_dmf/matlab
+#SBATCH --output=outputs/HCP_Deep_sameranges_12hs_dyn_fc.out
+#SBATCH --error=outputs/HCP_Deep_sameranges_12hs_dyn_fc.err
 
 ml matlab/R2022b
 matlab -nodisplay<<-EOF
@@ -20,7 +21,7 @@ if ~exist(folder_name, 'dir')
     mkdir(folder_name);
 end
 
-sub_experiment_name = "HCP_Deep_sameranges";
+sub_experiment_name = "HCP_Deep_sameranges_12hs";
 %mex ../dynamic_fic_dmf_Cpp/dyn_fic_DMF.cpp
 % Load Data
 load data/DTI_fiber_consensus_HCP.mat
@@ -72,7 +73,7 @@ end
 WFCdata = permute(WFCdata, [2,3,1]);
 WFCdataF = permute(WFCdataF, [2,3,1]);
 emp_fc = mean(WFCdataF,3);
-NHOURS = 4;
+NHOURS = 12;
 % bayesian model params
 checkpoint_file = "Results/dyn_fc/results_"+sub_experiment_name+".mat";
 bo_opts = {'IsObjectiveDeterministic',false,'UseParallel',true,... %% Will be determinsitic so we do not estimate error

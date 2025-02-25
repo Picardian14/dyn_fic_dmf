@@ -348,9 +348,8 @@ public:
     };
 
 
-    inline Eigen::ArrayXd curr2rate(const Eigen::ArrayXd& x, const Eigen::ArrayXd& scale, const Eigen::ArrayXd& bias, double g,
-           double I, double d) {
-        Eigen::ArrayXd y = g*(x-I)*(1+receptors*scale+bias);
+    inline Eigen::ArrayXd curr2rate(const Eigen::ArrayXd& x, double g,double I, double d) {
+        Eigen::ArrayXd y = g*(x-I);
         return y/(1-exp(-d*y));
     }
 
@@ -381,8 +380,8 @@ public:
                 Eigen::ArrayXd xn = I0*Jexte + w*JN*sn + G*JN*(C*sn.matrix()).array() - J*sg;
                 Eigen::ArrayXd xg = I0*Jexti + JN*sn - sg;
 
-                rn.col(rate_idx) = curr2rate(xn, scale,bias, g_e, Ie, de);
-                Eigen::ArrayXd rg = curr2rate(xg, scale,bias, g_i, Ii, di);
+                rn.col(rate_idx) = curr2rate(xn, g_e, Ie, de);
+                Eigen::ArrayXd rg = curr2rate(xg, g_i, Ii, di);
 
                 rnd = rnd.unaryExpr([&n, &e](double dummy){return n(e);});
                 sn += dt*(-sn/taon+(1-sn)*gamma*rn.col(rate_idx)/1000) + rnd;

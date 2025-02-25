@@ -7,7 +7,7 @@ if ~exist(folder_name, 'dir')
     mkdir(folder_name);
 end
 
-sub_experiment_name = "HCP_Awake_sameranges";
+sub_experiment_name = "HCP_Awake_sameranges_12hs";
 
 %mex ../dynamic_fic_dmf_Cpp/dyn_fic_DMF.cpp
 % Load Data

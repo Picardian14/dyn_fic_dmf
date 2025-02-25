@@ -13,7 +13,7 @@
 #include<iostream>
 #include<random>
 #include<map>
-using namespace std;
+
 #include "Eigen/Dense"
 
 typedef std::map<std::string, const double*> ParamStruct;
@@ -81,10 +81,8 @@ void checkParams(const ParamStruct &params) {
     // Check that parameter struct has the necessary fields
     std::vector<std::string> required_fields = {"C", "receptors", "dt",
             "taon", "taog", "gamma", "sigma", "JN", "I0", "Jexte", "Jexti",
-            "w", "g_e", "Ie", "ce", "g_i", "Ii", "ci", "wgaine", "wgaini",
-            "lrj","taoj","obj_rate","G", "TR", "dtt", "batch_size",
-            "lr_receptors","lr_scaling",
-            "return_rate", "return_bold","return_fic", "with_plasticity", "with_decay"}; // added ljr, taoj and obj_rate as parameters of fic dynamics
+            "w", "g_e", "Ie", "de", "g_i", "Ii", "di", "scale", "bias",
+            "G", "TR", "dtt", "batch_size"};
     for (const auto& field : required_fields) {
         if (!params.count(field.c_str())) {
             std::string s("Missing field in parameter struct: ");
@@ -128,7 +126,7 @@ public:
     std::thread th;
 
     Eigen::Map<Eigen::MatrixXd> b;
-    Eigen::Map<Eigen::ArrayXXd> r;    
+    Eigen::Map<Eigen::ArrayXXd> r;
     Eigen::Map<Eigen::ArrayXd> s, f, v, q;
     Eigen::Map<Eigen::ArrayXd> ds, df, dv, dq;
     Eigen::ArrayXd Z;
@@ -148,7 +146,7 @@ public:
               nb_bold_steps(nb_rate_steps*params["dtt"][0]/params["TR"][0]),
               rate_buffer_size(nb_rate_steps),
               b(NULL, N_in, nb_rate_steps*params["dtt"][0]/params["TR"][0]),
-              r(NULL, N_in, nb_rate_steps),              
+              r(NULL, N_in, nb_rate_steps),
               s(NULL, N_in),
               f(NULL, N_in),
               v(NULL, N_in),
@@ -170,11 +168,10 @@ public:
      *
      * As the integrator runs, fills a pre-allocated array with BOLD values.
      *
-     * @param[in] rate_e_res reference to firing rate array
+     * @param[in] rate_res reference to firing rate array
      * @param[out] bold_res writeable reference to BOLD array
      */
-    void init(double* rate_e_res, double* bold_res) {
-    //void init(double* rate_e_res, double* bold_res, double* fic_res) {
+    void init(double* rate_res, double* bold_res) {
 
         double *Z_ptr = &Z(0), *dZ_ptr = &dZ(0);
         new (&s) Eigen::Map<Eigen::ArrayXd>(Z_ptr, N);
@@ -189,7 +186,7 @@ public:
         s.fill(0);
 
         new (&b) Eigen::Map<Eigen::MatrixXd>(bold_res, N, nb_bold_steps);
-        new (&r) Eigen::Map<Eigen::ArrayXXd>(rate_e_res, N, rate_buffer_size);        
+        new (&r) Eigen::Map<Eigen::ArrayXXd>(rate_res, N, rate_buffer_size);
 
     }
 
@@ -203,9 +200,9 @@ public:
 
       ds = ( r.col(idx % rate_buffer_size) - itaus*s - itauf*(f - 1) );
       df = s;
-      dv = itauo*(f - v.pow(ialpha));      
+      dv = itauo*(f - v.pow(ialpha));
       dq = itauo*(f*(1-pow(1-Eo, 1/f))/Eo - (v.pow(ialpha-1))*q);
-      
+
       Z += dt*dZ;
       count++;
 
@@ -265,10 +262,8 @@ public:
  * stochastic Euler-Maruyama method. Includes a parallelised integrator for the
  * BOLD Balloon-Windkessel model to simulate fMRI time series.
  *
- * RH Sep. 2021. Includes Plasticity rule for the local inihibitory feedback
- *
  */
-class DYN_FIC_DMFSimulator {
+class DMFSimulator {
 
 public:
     double dt;
@@ -281,28 +276,18 @@ public:
     double sigma;
     double taog;
     double taon;
-    double wgaine;
-    double wgaini;
     double g_e;
     double g_i;
     double Ie;
     double Ii;
-    double ce;
-    double ci;
+    double de;
+    double di;
     double dtt;
-    double lrj; // fic learning rate
-    double taoj; // fic decay constant
-    double obj_rate; // fic objective rate
-    
-    double lr_scaling; 
-
-    
-    
 
     size_t nb_steps, N, batch_size, steps_per_millisec, seed;
-    bool return_rate, return_bold, return_fic, with_decay, with_plasticity;
+    bool return_rate, return_bold;
 
-    Eigen::ArrayXd sn, sg, J, receptors,lr_receptors, Jexte, Jexti;
+    Eigen::ArrayXd sn, sg, J, receptors, Jexte, Jexti, scale, bias;
 
     BOLDIntegrator bold_int;
 
@@ -312,9 +297,11 @@ public:
      * @param params Matlab struct with all necessary parameters (see checkArguments)
      * @param nb_steps_in number of firing rate steps to simulate
      * @param N_in number of nodes/ROIs in the model
-
+     * @param return_rate_in boolean, whether to return firing rates
+     * @param return_bold_in boolean, whether to return BOLD activity
      */
-    DYN_FIC_DMFSimulator(ParamStruct params, size_t nb_steps_in, size_t N_in) :
+    DMFSimulator(ParamStruct params, size_t nb_steps_in, size_t N_in,
+                 bool return_rate_in, bool return_bold_in) :
             dt(params["dt"][0]),
             I0(params["I0"][0]),
             w(params["w"][0]),
@@ -324,37 +311,28 @@ public:
             sigma(params["sigma"][0]),
             taog(params["taog"][0]),
             taon(params["taon"][0]),
-            wgaine(params["wgaine"][0]),
-            wgaini(params["wgaini"][0]),
             g_e(params["g_e"][0]),
             g_i(params["g_i"][0]),
             Ie(params["Ie"][0]),
             Ii(params["Ii"][0]),
-            ce(params["ce"][0]),
-            ci(params["ci"][0]),
+            de(params["de"][0]),
+            di(params["di"][0]),
             dtt(params["dtt"][0]),
-            lrj(params["lrj"][0]), // added here RH
-            taoj(params["taoj"][0]),
-            obj_rate(params["obj_rate"][0]),
             nb_steps(nb_steps_in),
             N(N_in),
             batch_size(params["batch_size"][0]),
             steps_per_millisec(1.0/params["dt"][0]),
-            return_rate(params["return_rate"][0]),
-            return_bold(params["return_bold"][0]),
-            return_fic(params["return_fic"][0]),
-            with_decay(params["with_decay"][0]),
-            with_plasticity(params["with_plasticity"][0]),
+            return_rate(return_rate_in),
+            return_bold(return_bold_in),
             sn(N_in),
             sg(N_in),
-            
-            lr_scaling(params["lr_scaling"][0]),
             bold_int(params, nb_steps, N_in) {
 
               C = Eigen::Map<const Eigen::MatrixXd>(params["C"], N, N);
 
               receptors = ensureArray(params, "receptors", N);
-              lr_receptors = ensureArray(params, "lr_receptors", N);
+              scale     = ensureArray(params, "scale", N);              
+              bias     = ensureArray(params, "bias", N);              
               Jexte     = ensureArray(params, "Jexte", N);
               Jexti     = ensureArray(params, "Jexti", N);
               J         = ensureArray(params, "J", N);
@@ -370,29 +348,22 @@ public:
     };
 
 
-    inline Eigen::ArrayXd curr2rate(const Eigen::ArrayXd& x, double wgain, double g,
-           double I, double c) {
-        Eigen::ArrayXd y = c*(x-I)*(1+receptors*wgain);
-        return y/(1-exp(-g*y));
+    inline Eigen::ArrayXd curr2rate(const Eigen::ArrayXd& x, double g,double I, double d) {
+        Eigen::ArrayXd y = g*(x-I);
+        return y/(1-exp(-d*y));
     }
 
 
-    void run(double* rate_e_res,double* rate_i_res, double* bold_res, double* fic_res) {        
+    void run(double* rate_res, double* bold_res) {
+
         // Initialise BOLD integrator if needed
-        if (return_bold) { bold_int.init(rate_e_res, bold_res); }        
+        if (return_bold) { bold_int.init(rate_res, bold_res); }
         double bold_timer = 0;
         size_t last_bold = 0;
 
-        // Build Eigen::Map to return excitatory rates by reference
+        // Build Eigen::Map to return rates by reference
         size_t rate_size = return_rate ? nb_steps : (2*batch_size);
-        Eigen::Map<Eigen::ArrayXXd> rn(rate_e_res, N, rate_size);
-
-        // Build Eigen::Map to return inhibitory rates by reference        
-        Eigen::Map<Eigen::ArrayXXd> rg(rate_i_res, N, rate_size);
-
-        // Build Eigen::Map to return fic by reference
-        size_t fic_size = return_fic ? nb_steps : (2*batch_size);
-        Eigen::Map<Eigen::ArrayXXd> fic(fic_res, N, fic_size);
+        Eigen::Map<Eigen::ArrayXXd> rn(rate_res, N, rate_size);
 
         // Initialise PRNG and arrays, and start simulation
         std::default_random_engine e(seed);
@@ -400,33 +371,25 @@ public:
         sn.fill(0.001);
         sg.fill(0.001);
         Eigen::ArrayXd rnd = Eigen::ArrayXd::Zero(N);
-        Eigen::ArrayXd jt = J; //initializing fic
-        
+
         for (size_t t = 0; t < nb_steps; t++) {
 
             size_t rate_idx = t % rate_size;
-            size_t fic_idx = t % fic_size;
-            for (size_t dummy = 0; dummy < steps_per_millisec; dummy++) {                
-                Eigen::ArrayXd xn = with_plasticity ? I0*Jexte + w*JN*sn + G*JN*(C*sn.matrix()).array() - jt*sg : I0*Jexte + w*JN*sn + G*JN*(C*sn.matrix()).array() - J*sg;;
+
+            for (size_t dummy = 0; dummy < steps_per_millisec; dummy++) {
+                Eigen::ArrayXd xn = I0*Jexte + w*JN*sn + G*JN*(C*sn.matrix()).array() - J*(1+receptors*scale+bias)*sg;
                 Eigen::ArrayXd xg = I0*Jexti + JN*sn - sg;
 
-                rn.col(rate_idx) = curr2rate(xn, wgaine, g_e, Ie, ce);
-                rg.col(rate_idx) = curr2rate(xg, wgaini, g_i, Ii, ci);
+                rn.col(rate_idx) = curr2rate(xn, g_e, Ie, de);
+                Eigen::ArrayXd rg = curr2rate(xg, g_i, Ii, di);
 
                 rnd = rnd.unaryExpr([&n, &e](double dummy){return n(e);});
-                sn += dt*(-sn/taon+(1-sn)*gamma*rn.col(rate_idx)/1000) + rnd; 
+                sn += dt*(-sn/taon+(1-sn)*gamma*rn.col(rate_idx)/1000) + rnd;
                 sn = sn.unaryExpr(&clip);
 
                 rnd = rnd.unaryExpr([&n, &e](double dummy){return n(e);});
-                sg += dt*(-sg/taog+rg.col(rate_idx)/1000) + rnd;
+                sg += dt*(-sg/taog+rg/1000) + rnd;
                 sg = sg.unaryExpr(&clip);
-                if (with_decay) {
-                    jt += dt*(-jt/taoj + lrj*(1+lr_receptors*lr_scaling)*(rg.col(rate_idx)*(rn.col(rate_idx)-obj_rate))/1000000); // plasticity and decay               
-                }else{
-                    jt += dt*(lrj*(1+lr_receptors*lr_scaling)*(rg.col(rate_idx)*(rn.col(rate_idx)-obj_rate))/1000000); // plasticity
-                };                
-                //jt += dt*(lrj*(rg.col(rate_idx)*(rn.col(rate_idx)-obj_rate))/1000000); // plasticity                 
-                fic.col(fic_idx) = jt; // saving
             }
 
             auto start = std::chrono::steady_clock::now();
@@ -446,7 +409,7 @@ public:
             bold_timer += std::chrono::duration <double, std::milli> (diff).count();
 
         }
-        
+
         if (return_bold) {
             bold_int.join();
 

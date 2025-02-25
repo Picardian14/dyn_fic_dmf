@@ -83,7 +83,6 @@ void checkParams(const ParamStruct &params) {
             "taon", "taog", "gamma", "sigma", "JN", "I0", "Jexte", "Jexti",
             "w", "g_e", "Ie", "ce", "g_i", "Ii", "ci", "wgaine", "wgaini",
             "lrj","taoj","obj_rate","G", "TR", "dtt", "batch_size",
-            "lr_receptors","lr_scaling",
             "return_rate", "return_bold","return_fic", "with_plasticity", "with_decay"}; // added ljr, taoj and obj_rate as parameters of fic dynamics
     for (const auto& field : required_fields) {
         if (!params.count(field.c_str())) {
@@ -294,15 +293,11 @@ public:
     double taoj; // fic decay constant
     double obj_rate; // fic objective rate
     
-    double lr_scaling; 
-
-    
-    
 
     size_t nb_steps, N, batch_size, steps_per_millisec, seed;
     bool return_rate, return_bold, return_fic, with_decay, with_plasticity;
 
-    Eigen::ArrayXd sn, sg, J, receptors,lr_receptors, Jexte, Jexti;
+    Eigen::ArrayXd sn, sg, J, receptors, Jexte, Jexti;
 
     BOLDIntegrator bold_int;
 
@@ -347,14 +342,11 @@ public:
             with_plasticity(params["with_plasticity"][0]),
             sn(N_in),
             sg(N_in),
-            
-            lr_scaling(params["lr_scaling"][0]),
             bold_int(params, nb_steps, N_in) {
 
               C = Eigen::Map<const Eigen::MatrixXd>(params["C"], N, N);
 
               receptors = ensureArray(params, "receptors", N);
-              lr_receptors = ensureArray(params, "lr_receptors", N);
               Jexte     = ensureArray(params, "Jexte", N);
               Jexti     = ensureArray(params, "Jexti", N);
               J         = ensureArray(params, "J", N);
@@ -377,7 +369,8 @@ public:
     }
 
 
-    void run(double* rate_e_res,double* rate_i_res, double* bold_res, double* fic_res) {        
+    void run(double* rate_e_res,double* rate_i_res, double* bold_res, double* fic_res) {
+        cout << "Debuging bold";
         // Initialise BOLD integrator if needed
         if (return_bold) { bold_int.init(rate_e_res, bold_res); }        
         double bold_timer = 0;
@@ -421,9 +414,9 @@ public:
                 sg += dt*(-sg/taog+rg.col(rate_idx)/1000) + rnd;
                 sg = sg.unaryExpr(&clip);
                 if (with_decay) {
-                    jt += dt*(-jt/taoj + lrj*(1+lr_receptors*lr_scaling)*(rg.col(rate_idx)*(rn.col(rate_idx)-obj_rate))/1000000); // plasticity and decay               
+                    jt += dt*(-jt/taoj + lrj*(rg.col(rate_idx)*(rn.col(rate_idx)-obj_rate))/1000000); // plasticity and decay               
                 }else{
-                    jt += dt*(lrj*(1+lr_receptors*lr_scaling)*(rg.col(rate_idx)*(rn.col(rate_idx)-obj_rate))/1000000); // plasticity
+                    jt += dt*(lrj*(rg.col(rate_idx)*(rn.col(rate_idx)-obj_rate))/1000000); // plasticity
                 };                
                 //jt += dt*(lrj*(rg.col(rate_idx)*(rn.col(rate_idx)-obj_rate))/1000000); // plasticity                 
                 fic.col(fic_idx) = jt; // saving

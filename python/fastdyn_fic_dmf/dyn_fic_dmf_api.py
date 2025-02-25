@@ -65,6 +65,7 @@ def default_params(**kwargs):
     params              = {}
     params['C']         = C        # structural connectivity
     params['receptors'] = 0        # receptor density
+    params['lr_receptors'] = 0
     params['dt']        = 0.1      # ms
     params['taon']      = 100      # NMDA tau ms
     params['taog']      = 10       # GABA tau ms
@@ -83,6 +84,7 @@ def default_params(**kwargs):
     params['ci']       = 615.     # inhibitory conductance
     params['wgaine']    = 0        # neuromodulatory gain
     params['wgaini']    = 0        # neuromodulatory gain
+    params['lr_scaling'] = 0
     params['G']         = 2        # Global Coupling Parameter
     
     # Balloon-Windkessel parameters (from firing rates to BOLD signal)
