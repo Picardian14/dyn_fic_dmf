@@ -65,7 +65,7 @@ def default_params(**kwargs):
     params              = {}
     params['C']         = C        # structural connectivity
     params['receptors'] = 0        # receptor density
-    params['lr_receptors'] = 0
+    params['lr_vector'] = 0
     params['dt']        = 0.1      # ms
     params['taon']      = 100      # NMDA tau ms
     params['taog']      = 10       # GABA tau ms
