@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=slow_wave_08
-#SBATCH --cpus-per-task=24
+#SBATCH --cpus-per-task=32
 #SBATCH --time=48:00:00
 #SBATCH --mem=32G
 #SBATCH --output=outputs/slow_wave_08_%A_%a.out
