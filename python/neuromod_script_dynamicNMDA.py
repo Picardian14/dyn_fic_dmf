@@ -43,15 +43,15 @@ params["with_plasticity"] = True
 params["with_decay"] = True
 
 isubfcd = np.triu_indices(C.shape[1],1)
-burnout = 7
-params["flp"] = 0.01
-params["fhp"] = 0.1
+burnout = 10
+params["flp"] = 0.008
+params["fhp"] = 0.09
 params["wsize"] = 30
 overlap = 29
 #nb_steps = 460000
 #T = (nb_steps/params["TR"])*params["dtt"]
 T = 250
-params['TR'] = 2
+params['TR'] = 0.72
 nb_steps = int((T*params["TR"])/params["dtt"])
 win_start = np.arange(0, T - burnout - params["wsize"], params["wsize"] - overlap)
 nwins = len(win_start)
@@ -79,7 +79,8 @@ mean_fc_grid = np.zeros((len(LR_range),len(GAINE_range),params['N'],params['N'])
 sim_fcds_grid = np.zeros((len(LR_range),len(GAINE_range),nwins-1,nwins-1))
 mean_fr_grid = np.zeros((len(LR_range),len(GAINE_range), params['N']))
 std_fr_grid = np.zeros((len(LR_range),len(GAINE_range), params['N']))
-
+mean_fic_grid = np.zeros((len(LR_range),len(GAINE_range), params['N']))
+std_fic_grid = np.zeros((len(LR_range),len(GAINE_range), params['N']))
 
 G = 2.21
 #LR = 44.3
@@ -99,10 +100,12 @@ def grid_step(args):
     #params['taoj'] = 210000
     try:
         params['J'] = 0.75*params['G']*params['C'].sum(axis=0).squeeze() + 1    
-        rates, rates_inh, bold, fic_t = dmf.run(params, nb_steps)     
+        rates, _, bold, fic_t = dmf.run(params, nb_steps)     
         bold = bold[:, burnout:]
         # If a bold region has nans, replace with 0
         bold[np.isnan(bold)] = 0
+        rates = rates[:,burnout*1000:]
+        fic_t = fic_t[:,burnout*1000:]
         filt_bold = filter_bold(bold.T, params['flp'],params['fhp'], params['TR'])
         time_fc = compute_fcd(filt_bold, params["wsize"], overlap, isubfcd)
         # Replace 'compute_fcd' with the appropriate function or code that computes time_fc
@@ -110,7 +113,9 @@ def grid_step(args):
         fcd = np.corrcoef(time_fc.T)    
         mean_firing_rates= np.mean(rates, axis=1)
         std_firing_rates= np.std(rates, axis=1)    
-        return idx_LR,idx_GAINE, bold_fc, fcd,mean_firing_rates, std_firing_rates
+        mean_fic = np.mean(fic_t, axis=1)
+        std_fic = np.std(fic_t, axis=1)
+        return idx_LR,idx_GAINE, bold_fc, fcd,mean_firing_rates, std_firing_rates,mean_fic, std_fic
     except:
         print(f"Error with LR: {LR} and GAINE: {GAINE}")
         return None,None,None,None,None,None
@@ -142,11 +147,16 @@ for results in results_list:
     sim_fcds = results[3] 
     mean_fr = results[4]  
     std_fr = results[5]
+    mean_fic = results[6]
+    std_fic = results[7]
     
     mean_fc_grid[idx_LR,idx_GAINE] = mean_fc
     sim_fcds_grid[idx_LR,idx_GAINE] = sim_fcds
     mean_fr_grid[idx_LR,idx_GAINE] = mean_fr
     std_fr_grid[idx_LR,idx_GAINE] = std_fr
+    mean_fic_grid[idx_LR,idx_GAINE] = mean_fic
+    std_fic_grid[idx_LR,idx_GAINE] = std_fic
+
 
 
 import os
@@ -157,7 +167,9 @@ arrays_to_save = {
     'mean_fc_grid': mean_fc_grid,
     'sim_stds_grid': sim_fcds_grid,
     'mean_fr_grid': mean_fr_grid,
-    'std_fr_grid': std_fr_grid
+    'std_fr_grid': std_fr_grid,
+    'mean_fic_grid': mean_fic_grid,
+    'std_fic_grid': std_fic_grid
     
 }
 

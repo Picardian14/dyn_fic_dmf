@@ -169,8 +169,8 @@ def main():
     params["return_fic"] = True
 
     burnout = 7
-    params["flp"] = 0.01
-    params["fhp"] = 0.1
+    params["flp"] = 0.008
+    params["fhp"] = 0.09
     params["wsize"] = 30
     overlap = 29
     params['TR'] = 2
